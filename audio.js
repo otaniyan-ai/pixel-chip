@@ -16,21 +16,12 @@ function ensureAudio() {
   bgm = new Audio('assets/music/chip_action.mp3');
   bgm.loop = true;
   bgm.volume = 0.35;
-  bgm.addEventListener('canplaythrough', () => {
-    if (state === STATE_PLAYING && level !== 5) bgm.play().catch(() => {});
-  });
   titleBgm = new Audio('assets/music/title.mp3');
   titleBgm.loop = true;
   titleBgm.volume = 0.35;
-  titleBgm.addEventListener('canplaythrough', () => {
-    if (state === STATE_TITLE) titleBgm.play().catch(() => {});
-  });
   bossBgm = new Audio('assets/music/boss.mp3');
   bossBgm.loop = true;
   bossBgm.volume = 0.35;
-  bossBgm.addEventListener('canplaythrough', () => {
-    if (state === STATE_PLAYING && level === 5) bossBgm.play().catch(() => {});
-  });
   audioReady = true;
 }
 function playSfx(name) {
@@ -42,7 +33,9 @@ function playSfx(name) {
 }
 function startBgm() {
   if (!audioReady) return;
-  bgm.play().catch(() => {});
+  bgm.play().catch(() => {
+    setTimeout(() => { if (state === STATE_PLAYING && level !== 5) startBgm(); }, 200);
+  });
 }
 function stopBgm() {
   if (!audioReady) return;
@@ -52,5 +45,7 @@ function stopBgm() {
 }
 function startBossBgm() {
   if (!audioReady) return;
-  bossBgm.play().catch(() => {});
+  bossBgm.play().catch(() => {
+    setTimeout(() => { if (state === STATE_PLAYING && level === 5) startBossBgm(); }, 200);
+  });
 }

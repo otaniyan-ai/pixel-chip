@@ -267,6 +267,8 @@ function updateTouchControls() {
       el.style.pointerEvents = (state === STATE_PLAYING || state === STATE_PAUSED) ? 'auto' : 'none';
     } else if (b.id === 'btn-quit') {
       el.style.pointerEvents = (state === STATE_PAUSED) ? 'auto' : 'none';
+    } else if (b.key === 'ArrowLeft' || b.key === 'ArrowRight') {
+      el.style.pointerEvents = (state === STATE_PLAYING || state === STATE_STAGE_SELECT) ? 'auto' : 'none';
     } else {
       el.style.pointerEvents = (state === STATE_PLAYING) ? 'auto' : 'none';
     }
