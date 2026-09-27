@@ -4,6 +4,12 @@ const SCREEN_W = 640;
 const SCREEN_H = 384;
 canvas.width = SCREEN_W;
 canvas.height = SCREEN_H;
+function scaleCanvas() {
+  const s = Math.min(window.innerWidth / SCREEN_W, window.innerHeight / SCREEN_H);
+  canvas.style.transform = `scale(${s})`;
+}
+window.addEventListener('resize', scaleCanvas);
+scaleCanvas();
 
 const TILE = 32;
 const STAGE_H = 12;
