@@ -209,6 +209,7 @@ const touchButtons = [
   { id: 'btn-right', key: 'ArrowRight' },
   { id: 'btn-jump', key: 'Space' },
   { id: 'btn-fire', key: 'KeyX' },
+  { id: 'btn-pause', key: 'KeyP' },
 ];
 function initTouchControls() {
   for (const b of touchButtons) {
@@ -216,17 +217,27 @@ function initTouchControls() {
     if (!el) continue;
     el.addEventListener('touchstart', (e) => {
       e.preventDefault();
-      keys[b.key] = true;
+      if (b.id === 'btn-pause') {
+        if (state === STATE_PLAYING) pauseGame();
+        else if (state === STATE_PAUSED) resumeGame();
+      } else {
+        keys[b.key] = true;
+      }
     });
-    el.addEventListener('touchend', () => { keys[b.key] = false; });
-    el.addEventListener('touchcancel', () => { keys[b.key] = false; });
+    el.addEventListener('touchend', () => { if (b.id !== 'btn-pause') keys[b.key] = false; });
+    el.addEventListener('touchcancel', () => { if (b.id !== 'btn-pause') keys[b.key] = false; });
     el.addEventListener('mousedown', (e) => {
       e.preventDefault();
-      keys[b.key] = true;
+      if (b.id === 'btn-pause') {
+        if (state === STATE_PLAYING) pauseGame();
+        else if (state === STATE_PAUSED) resumeGame();
+      } else {
+        keys[b.key] = true;
+      }
     });
-    el.addEventListener('mouseup', () => { keys[b.key] = false; });
-    el.addEventListener('mouseleave', () => { keys[b.key] = false; });
-    el.addEventListener('blur', () => { keys[b.key] = false; });
+    el.addEventListener('mouseup', () => { if (b.id !== 'btn-pause') keys[b.key] = false; });
+    el.addEventListener('mouseleave', () => { if (b.id !== 'btn-pause') keys[b.key] = false; });
+    el.addEventListener('blur', () => { if (b.id !== 'btn-pause') keys[b.key] = false; });
   }
 }
 initTouchControls();
