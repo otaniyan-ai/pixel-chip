@@ -4,6 +4,9 @@ A 2D pixel-art platformer. Run, jump, shoot fireballs, and clear 6 main stages p
 
 Play: https://otaniyan-ai.github.io/pixel-chip/
 
+![Pixel Chip](screenshot/スクリーンショット 2026-09-27 153108.png)
+![Pixel Chip](screenshot/スクリーンショット 2026-09-27 153121.png)
+
 ## 遊び方
 
 | 入力 | 操作 |
