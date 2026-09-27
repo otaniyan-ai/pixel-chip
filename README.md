@@ -39,6 +39,7 @@ Play: https://otaniyan-ai.github.io/pixel-chip/
 - **216 patterns**, each 50 columns × 12 rows (TILE = 32px)
 - 216パターン、各50列×12行、17種の要素（Gap/コイン/敵/プラットフォーム/パイプ/ブロック/梯子/スプリング/コンベヤー/火床/チェックポイント等）
 - 17 element types: gaps, platforms, moving platforms, vertical platforms, breakable platforms, pipes, blocks (?/brick), hidden blocks, ladders, moving ladders, springs, conveyors, fire floors, enemies, coins, checkpoints
+- 17要素：ギャップ / 固定プラットフォーム / 移動プラットフォーム / 垂直プラットフォーム / 壊れるプラットフォーム / パイプ / ブロック（?/レンガ）/ 隠れブロック / 梯子 / 移動梯子 / スプリング / コンベヤー / 火床 / 敵 / コイン / チェックポイント
 - Patterns are composed into stages; each stage concatenates pattern widths
 - パターンを連結してステージを構成。各ステージはパターンの幅を足し算
 - Difficulty 1–5 per pattern
@@ -146,13 +147,6 @@ All audio is from **Conte de Fées (こんとどぅふぇ)** — https://conte-d
 ```
 BGM: こんとどぅふぇ https://conte-de-fees.com/
 ```
-
-## Development Log
-
-- `test-play.js`: 302 assertions, all passing
-- `test-play.js`：302アサーション、全PASS
-- Tests cover: movement, jump, stomp, gaps, fall death, respawn, game over, restart, stage clear, blocks, moving platforms, time limit, enemy types, variable jump, touch controls, SFX, BGM, backgrounds, clouds, mountains, fire power, fireball, stomp combo, checkpoint, hidden block, fire cooldown, boss stage, ladder, vertical platform, breakable platform, forced scroll, stage select, high score, pause, volume, pattern library, double-gap, elevated, enemy-corridor, chain-move, moving-ladder, spring, conveyor, fire-floor patterns
-- 対象：移動/ジャンプ/踏み込み/ギャップ/落下死/復活/ゲームオーバー/リスタート/ステージクリア/ブロック/移動プラットフォーム/時間制限/敵種/変数ジャンプ/タッチ操作/SFX/BGM/背景/雲/山/火力/火球/踏み込みコンボ/チェックポイント/隠れブロック/火冷却/ボスステージ/梯子/垂直プラットフォーム/壊れるプラットフォーム/強制スクロール/ステージ選択/ハイスコア/ポーズ/音量/パターンライブラリ/二重ギャップ/高所/敵回廊/連鎖移動/移動梯子/スプリング/コンベヤー/火床
 
 ## License
 
