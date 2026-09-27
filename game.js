@@ -223,6 +223,9 @@ function initTouchControls() {
         else if (state === STATE_PAUSED) resumeGame();
       } else if (b.id === 'btn-quit') {
         if (state === STATE_PAUSED) quitToTitle();
+      } else if (state === STATE_STAGE_SELECT) {
+        if (b.key === 'ArrowLeft') stageSelectIndex = Math.max(0, stageSelectIndex - 1);
+        else if (b.key === 'ArrowRight') stageSelectIndex = Math.min(STAGES.length, stageSelectIndex + 1);
       } else {
         keys[b.key] = true;
       }
@@ -236,6 +239,9 @@ function initTouchControls() {
         else if (state === STATE_PAUSED) resumeGame();
       } else if (b.id === 'btn-quit') {
         if (state === STATE_PAUSED) quitToTitle();
+      } else if (state === STATE_STAGE_SELECT) {
+        if (b.key === 'ArrowLeft') stageSelectIndex = Math.max(0, stageSelectIndex - 1);
+        else if (b.key === 'ArrowRight') stageSelectIndex = Math.min(STAGES.length, stageSelectIndex + 1);
       } else {
         keys[b.key] = true;
       }
@@ -266,6 +272,8 @@ canvas.addEventListener('touchstart', (e) => {
   if (state === STATE_TITLE) {
     ensureAudio();
     startGame();
+  } else if (state === STATE_STAGE_SELECT) {
+    confirmStageSelect();
   } else if (state === STATE_STAGE_CLEAR) {
     nextStage();
   } else if (state === STATE_GAME_OVER) {
