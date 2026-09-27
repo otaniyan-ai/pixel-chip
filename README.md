@@ -2,7 +2,21 @@
 
 A 2D pixel-art platformer. Run, jump, shoot fireballs, and clear 6 main stages plus a random EXTRA stage.
 
-Play: https://<username>.github.io/pixel-chip/
+Play: https://otaniyan-ai.github.io/pixel-chip/
+
+## 遊び方
+
+| 入力 | 操作 |
+|------|------|
+| 左 / 右矢印 | 移動 |
+| 上矢印 / Space | ジャンプ（長押しで高く跳ぶ） |
+| Xキー | 火球 |
+| タッチボタン（スマホ） | 左 / ジャンプ / 火 / 右 |
+
+- 3ライフ、チェックポイントで復活、Stage 5で強制スクロール
+- 敵を踏むとスコア、火球で遠距離攻撃
+- フラグで次のステージへ、EXTRAはシードランダム
+- 右上の STAGE ボタンで任意のステージへ
 
 ## How to Play
 
@@ -23,6 +37,7 @@ Play: https://<username>.github.io/pixel-chip/
 ### Pattern System
 
 - **216 patterns**, each 50 columns × 12 rows (TILE = 32px)
+- 216パターン、各50列×12行、17種の要素（Gap/コイン/敵/プラットフォーム/パイプ/ブロック/梯子/スプリング/コンベヤー/火床/チェックポイント等）
 - 17 element types: gaps, platforms, moving platforms, vertical platforms, breakable platforms, pipes, blocks (?/brick), hidden blocks, ladders, moving ladders, springs, conveyors, fire floors, enemies, coins, checkpoints
 - Patterns are composed into stages; each stage concatenates pattern widths
 - Difficulty 1–5 per pattern
@@ -30,10 +45,13 @@ Play: https://<username>.github.io/pixel-chip/
 ### Stage Composition
 
 - **6 main stages** (fixed pattern sequences, different BG + scroll)
+- メイン6本（固定パターン列、BG/スクロール違い）+ EXTRAシードランダム
 - **EXTRA stage**: seed-based random (6–10 patterns from pool, random BG/scroll)
 - `extraSeed = Date.now() % 2147483647` — different every play
 
 ### Enemy AI
+
+- 5種: walk / fast / jump / fly / shooter
 
 | Type | Speed | Behavior |
 |------|-------|----------|
@@ -46,6 +64,7 @@ Play: https://<username>.github.io/pixel-chip/
 ### Rendering
 
 - Canvas 640×384 (20×12 tiles at 32px)
+- Canvas 640×384、pixelated描画、ステージごとに空/山/雲が変化
 - `image-rendering: pixelated` for crisp pixels
 - Background: gradient sky + mountains + clouds (varies per stage)
 - Ground: grass + dirt layers
@@ -53,6 +72,7 @@ Play: https://<username>.github.io/pixel-chip/
 ### Variable Jump
 
 - Quick tap = short jump
+- 短押し=低いジャンプ、長押し=高いジャンプ
 - Hold = higher jump (velocity scales with hold time)
 
 ## Pattern Editor (`editor.html`)
