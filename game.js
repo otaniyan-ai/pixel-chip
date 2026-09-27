@@ -5,7 +5,11 @@ const SCREEN_H = 384;
 canvas.width = SCREEN_W;
 canvas.height = SCREEN_H;
 function scaleCanvas() {
-  const s = Math.min(window.innerWidth / SCREEN_W, window.innerHeight / SCREEN_H);
+  const topPad = 56;
+  const botPad = 88;
+  const availW = window.innerWidth;
+  const availH = window.innerHeight - topPad - botPad;
+  const s = Math.min(availW / SCREEN_W, availH / SCREEN_H, 1);
   canvas.style.transform = `scale(${s})`;
 }
 window.addEventListener('resize', scaleCanvas);
