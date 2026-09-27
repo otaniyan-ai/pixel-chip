@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Pixel Chip</title>
+  <style>
+    html,body { margin: 0; height: 100%;background: #111; display: flex;justify-content: center; align-items: center; overflow: hidden; touch-action: none; }
+    #game {image-rendering: pixelated; outline: 3px solid #333;box-shadow:0020px rgba(0,0,0,0.6); width: 640px; height: 384px; }
+    #touch-controls {position: fixed; bottom: 16px; left: 0; right: 0; display: flex;justify-content: space-between; padding: 0 16px; pointer-events: none; z-index: 10; }
+    .touch-btn { width: 72px; height: 72px; border-radius: 12px; background: rgba(255,255,255,0.15); color: #fff; font-size: 28px; display: flex; align-items: center; justify-content: center; touch-action: none; user-select: none; pointer-events: none; }
+    #btn-stage-select { position: fixed; top: 16px; right: 16px; width: 72px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.15); color: #fff; font-size: 16px; z-index: 10; }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <button id="btn-stage-select" aria-label="stage select">STAGE</button>
+  <div id="touch-controls">
+    <button id="btn-left" class="touch-btn" aria-label="left">←</button>
+    <button id="btn-jump" class="touch-btn" aria-label="jump">↑</button>
+    <button id="btn-fire" class="touch-btn" aria-label="fire" style="background:rgba(255,200,0,0.25)">✦</button>
+    <button id="btn-right" class="touch-btn" aria-label="right">→</button>
+  </div>
+  <script src="patterns.js"></script>
+  <script src="stages.js"></script>
+  <script src="game.js"></script>
+  <script src="audio.js"></script>
+  <script src="player.js"></script>
+  <script src="enemies.js"></script>
+  <script src="render.js"></script>
+</body>
+</html>

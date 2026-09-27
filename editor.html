@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Pixel Chip - Pattern Editor</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#1a1a2e;color:#c0c0d0;font-family:'Courier New',monospace;font-size:13px;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+header{background:#2a2a3e;padding:8px 12px;display:flex;align-items:center;gap:12px;border-bottom:2px solid #444}
+header h1{font-size:16px;color:#ffcc00}
+header .pat-name{font-size:14px;color:#8ac0ff}
+header .pat-meta{font-size:12px;color:#888}
+.main{flex:1;display:flex;overflow:hidden}
+.left-panel{width:200px;background:#222233;border-right:2px solid #444;overflow-y:auto}
+.left-panel h2{padding:8px;font-size:13px;color:#ffcc00;background:#2a2a3e}
+.left-panel .filter{padding:6px 8px;display:flex;gap:4px}
+.left-panel .filter select{width:100%;background:#1a1a2e;color:#c0c0d0;border:1px solid #555;font-size:12px;padding:4px}
+.pat-list{list-style:none}
+.pat-list li{padding:6px 8px;cursor:pointer;border-bottom:1px solid #333;font-size:12px}
+.pat-list li:hover{background:#333344}
+.pat-list li.active{background:#444455;border-left:3px solid #ffcc00}
+.pat-list li .cat{color:#888;font-size:10px}
+.center-panel{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.tool-bar{padding:6px 8px;display:flex;flex-wrap:wrap;gap:4px;background:#2a2a3e;border-bottom:2px solid #444}
+.tool-btn{padding:4px 8px;background:#333344;color:#c0c0d0;border:1px solid #555;cursor:pointer;font-size:11px}
+.tool-btn.active{background:#555566;border-color:#ffcc00;color:#ffcc00}
+.tool-btn:hover{background:#444455}
+.grid-wrap{flex:1;overflow:auto;background:#111122}
+canvas#grid{border:2px solid #555;image-rendering:pixelated;display:block}
+.right-panel{width:220px;background:#222233;border-left:2px solid #444;overflow-y:auto}
+.right-panel h2{padding:8px;font-size:13px;color:#ffcc00;background:#2a2a3e}
+.prop-row{padding:6px 8px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #333}
+.prop-row label{width:80px;font-size:12px;color:#8ac0ff}
+.prop-row input,.prop-row select{flex:1;background:#1a1a2e;color:#c0c0d0;border:1px solid #555;font-size:12px;padding:3px}
+.bottom-panel{background:#2a2a3e;border-top:2px solid #444;padding:8px;overflow-y:auto;max-height:200px}
+.bottom-panel h2{font-size:13px;color:#ffcc00;margin-bottom:6px}
+.stage-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}
+.stage-row .stage-label{width:80px;font-size:12px;color:#8ac0ff;padding-top:4px}
+.stage-row .pat-tags{flex:1;display:flex;flex-wrap:wrap;gap:4px}
+.stage-row .pat-tag{padding:2px 6px;background:#333344;border:1px solid #555;font-size:11px;cursor:pointer}
+.stage-row .pat-tag:hover{background:#444455}
+.stage-row .bg-sel,.stage-row .scroll-sel{width:60px;background:#1a1a2e;color:#c0c0d0;border:1px solid #555;font-size:11px;padding:2px}
+.validation{margin-top:8px}
+.validation .v-item{padding:4px 8px;font-size:12px;margin-bottom:2px}
+.validation .v-error{color:#ff4444}
+.validation .v-warn{color:#ffaa00}
+.validation .v-ok{color:#44cc44}
+.export-bar{display:flex;gap:8px;margin-top:8px}
+.export-bar button{padding:6px 12px;background:#333344;color:#c0c0d0;border:1px solid #555;cursor:pointer;font-size:12px}
+.export-bar button:hover{background:#444455}
+.export-bar button.primary{background:#444455;border-color:#ffcc00;color:#ffcc00}
+.export-area{width:100%;height:120px;background:#111122;color:#8ac0ff;border:1px solid #555;font-size:11px;padding:4px;margin-top:6px;overflow:auto}
+.ctrl-bar{display:flex;gap:4px;margin-top:6px}
+.ctrl-bar button{padding:4px 8px;background:#333344;color:#c0c0d0;border:1px solid #555;cursor:pointer;font-size:11px}
+.ctrl-bar button:hover{background:#444455}
+.ctrl-bar button:disabled{opacity:0.4;cursor:default}
+.new-pat-btn{padding:4px 8px;background:#444455;color:#ffcc00;border:1px solid #ffcc00;cursor:pointer;font-size:11px;margin:4px}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="hdr-title">Pattern Editor</h1>
+  <span class="pat-name" id="hdr-name"></span>
+  <span class="pat-meta" id="hdr-meta"></span>
+  <button class="tool-btn" id="btn-lang">EN</button>
+  <button class="tool-btn" id="btn-help">Help</button>
+</header>
+<div id="help-panel" style="display:none;position:fixed;top:60px;left:210px;width:360px;background:#2a2a3e;border:2px solid #ffcc00;padding:12px;z-index:100;font-size:12px;max-height:80vh;overflow-y:auto">
+  <h2 id="help-title" style="color:#ffcc00;margin-bottom:8px">Usage</h2>
+  <div id="help-content"></div>
+  <button class="tool-btn" id="btn-help-close" style="margin-top:8px">Close</button>
+</div>
+<div class="tab-bar" style="display:flex;background:#2a2a3e;border-bottom:2px solid #444;padding:4px 12px">
+  <button class="tool-btn active" id="tab-pattern">Pattern</button>
+  <button class="tool-btn" id="tab-stage">Stage Composition</button>
+</div>
+<div class="main">
+  <div class="left-panel">
+    <h2>Patterns</h2>
+    <div class="filter">
+      <select id="cat-filter">
+        <option value="all">All</option>
+        <option value="anchor">Anchor (s*)</option>
+        <option value="generic">Generic (g-*)</option>
+        <option value="variation">Variation (v-*)</option>
+        <option value="boss">Boss</option>
+      </select>
+      <select id="stage-filter">
+        <option value="-1">All Stages</option>
+        <option value="0">Stage 1</option>
+        <option value="1">Stage 2</option>
+        <option value="2">Stage 3</option>
+        <option value="3">Stage 4</option>
+        <option value="4">Stage 5</option>
+        <option value="5">Stage 6</option>
+      </select>
+    </div>
+    <button class="new-pat-btn" id="btn-new-pat">+ New Pattern</button>
+    <ul class="pat-list" id="pat-list"></ul>
+  </div>
+  <div class="center-panel">
+    <div class="tool-bar" id="tool-bar"></div>
+    <div class="grid-wrap" id="grid-wrap">
+      <canvas id="grid" width="1600" height="384"></canvas>
+    </div>
+    <div class="ctrl-bar" id="ctrl-bar">
+      <button id="btn-undo" disabled>Undo (Ctrl+Z)</button>
+      <button id="btn-redo" disabled>Redo (Ctrl+Y)</button>
+      <button id="btn-copy">Copy (Ctrl+C)</button>
+      <button id="btn-paste">Paste (Ctrl+V)</button>
+      <button id="btn-clear-selection">Clear Selection</button>
+    </div>
+    <div id="stage-view" style="display:none;flex:1;overflow-y:auto;padding:12px;background:#111122">
+      <h2 style="color:#ffcc00;margin-bottom:8px" id="stage-view-title">Stage Composition</h2>
+      <div id="stage-editor"></div>
+    </div>
+  </div>
+  <div class="right-panel">
+    <h2>Properties</h2>
+    <div id="prop-panel"></div>
+  </div>
+</div>
+<div class="bottom-panel">
+  <div class="validation" id="validation"></div>
+  <div class="export-bar">
+    <button class="primary" id="btn-export-pat">Export patterns.js</button>
+    <button class="primary" id="btn-export-stage">Export stages.js</button>
+    <button id="btn-copy-pat">Copy patterns.js</button>
+    <button id="btn-copy-stage">Copy stages.js</button>
+    <button id="btn-save-ls">Save to localStorage</button>
+    <button id="btn-load-ls">Load from localStorage</button>
+  </div>
+  <textarea class="export-area" id="export-area" readonly></textarea>
+</div>
+<script src="patterns.js"></script>
+<script src="stages.js"></script>
+<script>
+// ===== Constants =====
+const TILE = 32;
+const COLS = 50;
+const ROWS = 12;
+const CANVAS_W = COLS * TILE; // 1600
+const CANVAS_H = ROWS * TILE; // 384
+
+// ===== Language =====
+let lang = 'jp';
+const LANG = {
+  jp: {
+    title: 'パターンエディター',
+    patterns: 'パターン',
+    properties: 'プロパティ',
+    stage_comp: 'ステージ構成',
+    undo: 'Undo (Ctrl+Z)',
+    redo: 'Redo (Ctrl+Y)',
+    copy: 'Copy (Ctrl+C)',
+    paste: 'Paste (Ctrl+V)',
+    clear_sel: '選択解除',
+    export_pat: 'patterns.js を書き出す',
+    export_stage: 'stages.js を書き出す',
+    save_ls: 'localStorage に保存',
+    load_ls: 'localStorage から読み込む',
+    new_pat: '+ 新規パターン',
+    all: 'すべて',
+    anchor: 'アンカー (s*)',
+    generic: '汎用 (g-*)',
+    variation: 'バリエーション (v-*)',
+    boss: 'ボス',
+    gap: 'Gap',
+    coin: 'コイン',
+    enemy: '敵',
+    platform: 'プラットフォーム',
+    moving_platform: '移動プラットフォーム',
+    vertical_platform: '縦プラットフォーム',
+    breakable_platform: '壊れるプラットフォーム',
+    pipe: 'パイプ',
+    block: 'ブロック',
+    hidden_block: '隠れブロック',
+    ladder: '梯子',
+    moving_ladder: '移動梯子',
+    spring: 'スプリング',
+    conveyor: 'コンベヤー',
+    fire_floor: '火床',
+    checkpoint: 'チェックポイント',
+    select: '選択',
+    delete: '削除',
+    type: 'タイプ',
+    speed: '速度',
+    dir: '方向',
+    range: '範囲',
+    power: 'パワー',
+    width: '幅',
+    height: '高さ',
+    content: '中身',
+    delete_el: '要素を削除',
+    select_el: '要素を選択してください',
+    no_issues: '✓ 問題なし',
+    enemy_gap: '敵({type})が x={x} の穴にいる',
+    plat_gap: 'x={x} のプラットフォームが穴と重複',
+    coin_oob: 'コインが範囲外 ({x},{y})',
+    enemy_oob: '敵が範囲外 ({x},{y})',
+    plat_oob: 'プラットフォームが範囲外',
+    copied: '{n} 個のコピー完了',
+    clip_empty: 'クリップボードが空です',
+    no_saved: '保存データがありません',
+    saved: 'localStorage に保存しました',
+    loaded: 'localStorage から読み込みました',
+    pat_gen: 'patterns.js をダウンロードしました（2D-code/ に置き換えてください）',
+    stage_gen: 'stages.js をダウンロードしました（2D-code/ に置き換えてください）',
+    id_exists: 'ID が既に存在します',
+    sel_region: 'まず範囲を選択してください（グリッドをドラッグ）',
+    stage: 'ステージ',
+    extra: 'EXTRA',
+    add: '+ 追加',
+    bg: 'BG',
+    scroll: 'スクロール',
+    prompt_add: '追加するパターンID:',
+    prompt_id: 'パターンID (例: g-custom-1):',
+    prompt_name: 'パターン名:',
+    help_title: '使い方',
+    help_tools: 'ツール選択: 上部のツールバーから要素の種類を選択',
+    help_place: '配置: グリッドをクリック（複数タイル要素はドラッグで幅設定）',
+    help_delete: '削除: Selectツールで要素を選択 → Deleteボタン / Gapツールで穴をトグル',
+    help_copy: 'コピー: 範囲をドラッグ選択 → Ctrl+C',
+    help_paste: '貼り付け: マウス位置に Ctrl+V',
+    help_undo: 'Undo: Ctrl+Z / Redo: Ctrl+Y',
+    help_export: '書き出し: Exportボタンで patterns.js / stages.js ソースを生成',
+    help_stage: 'ステージ構成: 下部でパターン追加/削除、BG/スクロール選択',
+    help_validate: '検証: 穴に非fly敵、範囲外要素などを警告',
+    help_ls: '保存: localStorage に保存/読み込み（ブラウザ内保持）'
+  },
+  en: {
+    title: 'Pattern Editor',
+    patterns: 'Patterns',
+    properties: 'Properties',
+    stage_comp: 'Stage Composition',
+    undo: 'Undo (Ctrl+Z)',
+    redo: 'Redo (Ctrl+Y)',
+    copy: 'Copy (Ctrl+C)',
+    paste: 'Paste (Ctrl+V)',
+    clear_sel: 'Clear Selection',
+    export_pat: 'Export patterns.js',
+    export_stage: 'Export stages.js',
+    save_ls: 'Save to localStorage',
+    load_ls: 'Load from localStorage',
+    new_pat: '+ New Pattern',
+    all: 'All',
+    anchor: 'Anchor (s*)',
+    generic: 'Generic (g-*)',
+    variation: 'Variation (v-*)',
+    boss: 'Boss',
+    gap: 'Gap',
+    coin: 'Coin',
+    enemy: 'Enemy',
+    platform: 'Platform',
+    moving_platform: 'Moving Platform',
+    vertical_platform: 'Vertical Platform',
+    breakable_platform: 'Breakable Platform',
+    pipe: 'Pipe',
+    block: 'Block',
+    hidden_block: 'Hidden Block',
+    ladder: 'Ladder',
+    moving_ladder: 'Moving Ladder',
+    spring: 'Spring',
+    conveyor: 'Conveyor',
+    fire_floor: 'Fire Floor',
+    checkpoint: 'Checkpoint',
+    select: 'Select',
+    delete: 'Delete',
+    type: 'Type',
+    speed: 'Speed',
+    dir: 'Dir',
+    range: 'Range',
+    power: 'Power',
+    width: 'Width',
+    height: 'Height',
+    content: 'Content',
+    delete_el: 'Delete Element',
+    select_el: 'Select an element',
+    no_issues: '✓ No issues',
+    enemy_gap: 'Enemy ({type}) at x={x} is in a gap',
+    plat_gap: 'Platform at x={x} overlaps gap',
+    coin_oob: 'Coin out of bounds ({x},{y})',
+    enemy_oob: 'Enemy out of bounds ({x},{y})',
+    plat_oob: 'Platform out of bounds',
+    copied: 'Copied {n} elements',
+    clip_empty: 'Clipboard is empty',
+    no_saved: 'No saved data',
+    saved: 'Saved to localStorage',
+    loaded: 'Loaded from localStorage',
+    pat_gen: 'patterns.js downloaded (replace the file in 2D-code/)',
+    stage_gen: 'stages.js downloaded (replace the file in 2D-code/)',
+    id_exists: 'ID already exists',
+    sel_region: 'Select a region first (drag on grid)',
+    stage: 'Stage',
+    extra: 'EXTRA',
+    add: '+ Add',
+    bg: 'BG',
+    scroll: 'Scroll',
+    prompt_add: 'Pattern ID to add:',
+    prompt_id: 'Pattern ID (e.g. g-custom-1):',
+    prompt_name: 'Pattern name:',
+    help_title: 'Usage',
+    help_tools: 'Tool selection: choose element type from the tool bar above',
+    help_place: 'Place: click on grid (drag for multi-tile width)',
+    help_delete: 'Delete: Select tool → click element → Delete button / Gap tool toggles holes',
+    help_copy: 'Copy: drag-select a region → Ctrl+C',
+    help_paste: 'Paste: Ctrl+V at mouse position',
+    help_undo: 'Undo: Ctrl+Z / Redo: Ctrl+Y',
+    help_export: 'Export: Export buttons generate patterns.js / stages.js source',
+    help_stage: 'Stage composition: add/remove patterns, select BG/scroll below',
+    help_validate: 'Validation: warns about non-fly enemies in gaps, out-of-bounds elements',
+    help_ls: 'Save: localStorage save/load (browser-only persistence)'
+  }
+};
+function t(key, ...params) {
+  let s = LANG[lang][key] || key;
+  for (let i = 0; i < params.length; i++) {
+    s = s.replace('{' + (i + 1) + '}', params[i]);
+  }
+  return s;
+}
+function renderLang() {
+  document.getElementById('hdr-title').textContent = t('title');
+  document.getElementById('btn-lang').textContent = lang === 'jp' ? 'EN' : 'JP';
+  document.getElementById('btn-help').textContent = lang === 'jp' ? 'ヘルプ' : 'Help';
+  document.getElementById('help-title').textContent = t('help_title');
+  document.getElementById('help-content').innerHTML = [
+    t('help_tools'), t('help_place'), t('help_delete'), t('help_copy'), t('help_paste'),
+    t('help_undo'), t('help_export'), t('help_stage'), t('help_validate'), t('help_ls')
+  ].map(s => `<div style="margin-bottom:4px">• ${s}</div>`).join('');
+  document.getElementById('btn-help-close').textContent = lang === 'jp' ? '閉じる' : 'Close';
+  // Tool bar
+  renderToolBar();
+  // Ctrl bar
+  document.getElementById('btn-undo').textContent = t('undo');
+  document.getElementById('btn-redo').textContent = t('redo');
+  document.getElementById('btn-copy').textContent = t('copy');
+  document.getElementById('btn-paste').textContent = t('paste');
+  document.getElementById('btn-clear-selection').textContent = t('clear_sel');
+  // Export bar
+  document.getElementById('btn-export-pat').textContent = t('export_pat');
+  document.getElementById('btn-export-stage').textContent = t('export_stage');
+  document.getElementById('btn-copy-pat').textContent = lang === 'jp' ? 'patterns.js をコピー' : 'Copy patterns.js';
+  document.getElementById('btn-copy-stage').textContent = lang === 'jp' ? 'stages.js をコピー' : 'Copy stages.js';
+  document.getElementById('btn-save-ls').textContent = t('save_ls');
+  document.getElementById('btn-load-ls').textContent = t('load_ls');
+  // Left panel
+  document.querySelector('.left-panel h2').textContent = t('patterns');
+  document.getElementById('btn-new-pat').textContent = t('new_pat');
+  const opts = document.getElementById('cat-filter').options;
+  opts[0].textContent = t('all');
+  opts[1].textContent = t('anchor');
+  opts[2].textContent = t('generic');
+  opts[3].textContent = t('variation');
+  opts[4].textContent = t('boss');
+  const sOpts = document.getElementById('stage-filter').options;
+  sOpts[0].textContent = lang === 'jp' ? '全ステージ' : 'All Stages';
+  for (let i = 1; i <= 6; i++) sOpts[i].textContent = `${t('stage')} ${i}`;
+  // Right panel
+  document.querySelector('.right-panel h2').textContent = t('properties');
+  // Tabs
+  document.getElementById('tab-pattern').textContent = lang === 'jp' ? 'パターン' : 'Pattern';
+  document.getElementById('tab-stage').textContent = t('stage_comp');
+  document.getElementById('stage-view-title').textContent = t('stage_comp');
+  // Re-render dynamic sections
+  renderPatList();
+  renderStageEditor();
+  renderProps();
+  validate();
+}
+
+// ===== State =====
+let currentPatId = Object.keys(PATTERNS)[0];
+let currentTool = 'gap';
+let selectedElement = null;
+let clipboard = [];
+let undoStack = [];
+let redoStack = [];
+let dragStart = null;
+let selectionRect = null;
+let lastMouseCell = { x: 0, y: 0 };
+let enemyType = 'walk';
+
+function getPat() { return PATTERNS[currentPatId]; }
+function getPatData() {
+  const p = getPat();
+  return {
+    gaps: p.gaps ? [...p.gaps] : [],
+    platforms: p.platforms ? [...p.platforms] : [],
+    pipes: p.pipes ? [...p.pipes] : [],
+    blocks: p.blocks ? [...p.blocks] : [],
+    hiddenBlocks: p.hiddenBlocks ? [...p.hiddenBlocks] : [],
+    ladders: p.ladders ? [...p.ladders] : [],
+    movingPlatforms: p.movingPlatforms ? [...p.movingPlatforms] : [],
+    verticalPlatforms: p.verticalPlatforms ? [...p.verticalPlatforms] : [],
+    breakablePlatforms: p.breakablePlatforms ? [...p.breakablePlatforms] : [],
+    movingLadders: p.movingLadders ? [...p.movingLadders] : [],
+    springs: p.springs ? [...p.springs] : [],
+    conveyors: p.conveyors ? [...p.conveyors] : [],
+    fireFloors: p.fireFloors ? [...p.fireFloors] : [],
+    enemies: p.enemies ? [...p.enemies] : [],
+    coins: p.coins ? [...p.coins] : [],
+    checkpoints: p.checkpoints ? [...p.checkpoints] : []
+  };
+}
+function setPatData(data) {
+  const p = getPat();
+  p.gaps = data.gaps;
+  p.platforms = data.platforms;
+  p.pipes = data.pipes;
+  p.blocks = data.blocks;
+  p.hiddenBlocks = data.hiddenBlocks;
+  p.ladders = data.ladders;
+  p.movingPlatforms = data.movingPlatforms;
+  p.verticalPlatforms = data.verticalPlatforms;
+  p.breakablePlatforms = data.breakablePlatforms;
+  p.movingLadders = data.movingLadders;
+  p.springs = data.springs;
+  p.conveyors = data.conveyors;
+  p.fireFloors = data.fireFloors;
+  p.enemies = data.enemies;
+  p.coins = data.coins;
+  p.checkpoints = data.checkpoints;
+}
+
+// ===== Tools =====
+const TOOLS = [
+  { id:'gap', label:'gap' },
+  { id:'coin', label:'coin' },
+  { id:'enemy', label:'enemy' },
+  { id:'platform', label:'platform' },
+  { id:'moving-platform', label:'moving_platform' },
+  { id:'vertical-platform', label:'vertical_platform' },
+  { id:'breakable-platform', label:'breakable_platform' },
+  { id:'pipe', label:'pipe' },
+  { id:'block', label:'block' },
+  { id:'hidden-block', label:'hidden_block' },
+  { id:'ladder', label:'ladder' },
+  { id:'moving-ladder', label:'moving_ladder' },
+  { id:'spring', label:'spring' },
+  { id:'conveyor', label:'conveyor' },
+  { id:'fire-floor', label:'fire_floor' },
+  { id:'checkpoint', label:'checkpoint' },
+  { id:'select', label:'select' },
+  { id:'delete', label:'delete' }
+];
+
+function renderToolBar() {
+  const bar = document.getElementById('tool-bar');
+  bar.innerHTML = '';
+  for (const tool of TOOLS) {
+    const btn = document.createElement('button');
+    btn.className = 'tool-btn' + (currentTool === tool.id ? ' active' : '');
+    btn.textContent = t(tool.label);
+    btn.onclick = () => { currentTool = tool.id; renderToolBar(); renderGrid(); renderProps(); };
+    bar.appendChild(btn);
+    // Enemy type selector right after enemy tool
+    if (tool.id === 'enemy' && currentTool === 'enemy') {
+      const sel = document.createElement('select');
+      sel.style.cssText = 'padding:4px 8px;background:#333344;color:#c0c0d0;border:1px solid #555;font-size:11px';
+      for (const et of ['walk','fast','jump','fly','shooter']) {
+        const opt = document.createElement('option');
+        opt.value = et;
+        opt.textContent = et;
+        if (enemyType === et) opt.selected = true;
+        sel.appendChild(opt);
+      }
+      sel.onchange = () => { enemyType = sel.value; };
+      bar.appendChild(sel);
+    }
+  }
+}
+
+// ===== Full-size Rendering =====
+const canvas = document.getElementById('grid');
+const ctx = canvas.getContext('2d');
+
+function renderGrid() {
+  ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+  const d = getPatData();
+  const gapSet = new Set(d.gaps);
+  const bg = STAGE_BGS[0]; // Default BG for editor preview
+
+  // --- Background: sky gradient ---
+  const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
+  grad.addColorStop(0, bg.skyTop);
+  grad.addColorStop(1, bg.skyBottom);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  // --- Mountains ---
+  if (bg.mountains) {
+    ctx.fillStyle = bg.mountainDistant;
+    ctx.fillRect(0, 260, CANVAS_W, 60);
+    for (let i = 0; i < Math.ceil(CANVAS_W / 140); i++) {
+      const x = i * 140 - 70;
+      ctx.fillRect(x, 220, 100, 100);
+      ctx.fillRect(x + 15, 200, 60, 120);
+    }
+    ctx.fillStyle = bg.mountainFar;
+    ctx.fillRect(0, 280, CANVAS_W, 40);
+    for (let i = 0; i < Math.ceil(CANVAS_W / 160); i++) {
+      const x = i * 160 - 80;
+      ctx.fillRect(x, 240, 120, 80);
+      ctx.fillRect(x + 20, 220, 80, 100);
+      ctx.fillRect(x + 40, 200, 40, 120);
+    }
+    ctx.fillStyle = bg.mountainNear;
+    ctx.fillRect(0, 300, CANVAS_W, 20);
+    for (let i = 0; i < Math.ceil(CANVAS_W / 200); i++) {
+      const x = i * 200 + 50 - 100;
+      ctx.fillRect(x, 260, 160, 60);
+      ctx.fillRect(x + 30, 240, 100, 80);
+      ctx.fillRect(x + 60, 220, 40, 100);
+    }
+    ctx.fillStyle = bg.mountainMid;
+    ctx.fillRect(0, 310, CANVAS_W, 10);
+    for (let i = 0; i < Math.ceil(CANVAS_W / 180); i++) {
+      const x = i * 180 + 20 - 90;
+      ctx.fillRect(x, 280, 140, 40);
+      ctx.fillRect(x + 25, 260, 90, 60);
+      ctx.fillRect(x + 50, 240, 30, 80);
+    }
+    ctx.fillStyle = bg.mountainForeground;
+    ctx.fillRect(0, 320, CANVAS_W, 10);
+    for (let i = 0; i < Math.ceil(CANVAS_W / 220); i++) {
+      const x = i * 220 + 80 - 110;
+      ctx.fillRect(x, 300, 180, 30);
+      ctx.fillRect(x + 40, 280, 120, 50);
+      ctx.fillRect(x + 80, 260, 40, 70);
+    }
+  }
+
+  // --- Clouds ---
+  ctx.fillStyle = bg.cloudColor;
+  for (let i = 0; i < Math.ceil(CANVAS_W / 250); i++) {
+    const x = i * 250 - 100;
+    const y = 30 + (i * 25) % 120;
+    ctx.fillRect(x, y, 40, 12);
+    ctx.fillRect(x + 12, y - 8, 24, 12);
+    ctx.fillRect(x + 28, y - 16, 32, 12);
+  }
+
+  // --- Ground tiles (row 11, with gaps) ---
+  for (let c = 0; c < COLS; c++) {
+    const sx = c * TILE;
+    const sy = (ROWS - 1) * TILE;
+    if (!gapSet.has(c)) {
+      ctx.fillStyle = '#9c6a3a';
+      ctx.fillRect(sx, sy, TILE, TILE);
+      ctx.fillStyle = '#7ab04a';
+      ctx.fillRect(sx, sy, TILE, 10);
+      ctx.fillStyle = '#8a7a4a';
+      ctx.fillRect(sx + 6, sy + 3, 8, 4);
+      ctx.fillRect(sx + 18, sy + 3, 8, 4);
+    }
+  }
+
+  // --- Platforms ---
+  for (const p of d.platforms) {
+    const sx = p.x * TILE, sy = p.y * TILE;
+    const w = p.w * TILE, h = p.h * TILE;
+    ctx.fillStyle = '#4070c0';
+    ctx.fillRect(sx, sy, w, h);
+    ctx.fillStyle = '#2a50a0';
+    ctx.fillRect(sx, sy + h - 4, w, 4);
+    ctx.fillStyle = '#6090e0';
+    ctx.fillRect(sx + 4, sy + 4, w - 8, h - 8);
+  }
+
+  // --- Moving platforms ---
+  for (const p of d.movingPlatforms) {
+    const sx = p.x * TILE, sy = p.y * TILE;
+    const w = p.w * TILE;
+    ctx.fillStyle = '#4070c0';
+    ctx.fillRect(sx, sy, w, TILE);
+    ctx.fillStyle = '#2a50a0';
+    ctx.fillRect(sx, sy + TILE - 4, w, 4);
+    ctx.fillStyle = '#6090e0';
+    ctx.fillRect(sx + 4, sy + 4, w - 8, TILE - 8);
+    // Range indicator
+    ctx.fillStyle = 'rgba(100,150,255,0.3)';
+    ctx.fillRect(sx, sy - 4, w + p.range, 4);
+  }
+
+  // --- Vertical platforms ---
+  for (const p of d.verticalPlatforms) {
+    const sx = p.x * TILE, sy = p.y * TILE;
+    const w = p.w * TILE;
+    ctx.fillStyle = '#00cccc';
+    ctx.fillRect(sx, sy, w, TILE);
+    ctx.fillStyle = '#009999';
+    ctx.fillRect(sx, sy + TILE - 4, w, 4);
+    ctx.fillStyle = '#66eeee';
+    ctx.fillRect(sx + 4, sy + 4, w - 8, TILE - 8);
+    // Range indicator (vertical)
+    ctx.fillStyle = 'rgba(0,200,200,0.3)';
+    ctx.fillRect(sx, sy, w, p.range);
+  }
+
+  // --- Breakable platforms ---
+  for (const p of d.breakablePlatforms) {
+    const sx = p.x * TILE, sy = p.y * TILE;
+    const w = p.w * TILE, h = p.h * TILE;
+    ctx.fillStyle = '#c04040';
+    ctx.fillRect(sx, sy, w, h);
+    ctx.fillStyle = '#902020';
+    ctx.fillRect(sx, sy + h - 4, w, 4);
+    ctx.fillStyle = '#e06060';
+    ctx.fillRect(sx + 4, sy + 4, w - 8, h - 8);
+  }
+
+  // --- Pipes ---
+  for (const p of d.pipes) {
+    const sx = p.x * TILE, sy = p.y * TILE;
+    const w = p.w * TILE, h = p.h * TILE;
+    // Top
+    ctx.fillStyle = '#2a9a2a';
+    ctx.fillRect(sx - 2, sy, w + 4, TILE);
+    ctx.fillStyle = '#1a7a1a';
+    ctx.fillRect(sx - 2, sy, 4, 8);
+    ctx.fillRect(sx + w - 2, sy, 4, 8);
+    ctx.fillStyle = '#4ab04a';
+    ctx.fillRect(sx + 2, sy + 2, w - 4, 8);
+    // Body
+    for (let r = 1; r < p.h; r++) {
+      ctx.fillStyle = '#2a9a2a';
+      ctx.fillRect(sx, sy + r * TILE, w, TILE);
+      ctx.fillStyle = '#1a7a1a';
+      ctx.fillRect(sx, sy + r * TILE, 4, TILE);
+      ctx.fillRect(sx + w - 4, sy + r * TILE, 4, TILE);
+      ctx.fillStyle = '#4ab04a';
+      ctx.fillRect(sx + 4, sy + r * TILE, w - 8, TILE);
+    }
+  }
+
+  // --- Blocks ---
+  for (const b of d.blocks) {
+    const sx = b.x * TILE, sy = b.y * TILE;
+    if (b.type === 'q') {
+      ctx.fillStyle = '#e0a020';
+      ctx.fillRect(sx, sy, TILE, TILE);
+      ctx.fillStyle = '#c08010';
+      ctx.fillRect(sx + 2, sy + 2, TILE - 4, TILE - 4);
+      ctx.fillStyle = '#fff7c0';
+      ctx.fillRect(sx + 10, sy + 8, 12, 12);
+      ctx.fillStyle = '#e0a020';
+      ctx.fillRect(sx + 12, sy + 10, 8, 8);
+    } else {
+      ctx.fillStyle = '#b05a2a';
+      ctx.fillRect(sx, sy, TILE, TILE);
+      ctx.fillStyle = '#8a3a1a';
+      ctx.fillRect(sx, sy + 14, TILE, 4);
+      ctx.fillRect(sx + 14, sy, 4, 14);
+      ctx.fillRect(sx + 14, sy + 18, 4, 14);
+    }
+  }
+
+  // --- Hidden blocks ---
+  for (const b of d.hiddenBlocks) {
+    const sx = b.x * TILE, sy = b.y * TILE;
+    ctx.fillStyle = '#8a7a5a';
+    ctx.fillRect(sx, sy, TILE, TILE);
+    ctx.fillStyle = '#6a5a4a';
+    ctx.fillRect(sx + 2, sy + 2, TILE - 4, TILE - 4);
+  }
+
+  // --- Ladders ---
+  for (const l of d.ladders) {
+    const sx = l.x * TILE, sy = l.y * TILE;
+    ctx.fillStyle = '#8a5a2a';
+    ctx.fillRect(sx + 8, sy, 4, TILE);
+    ctx.fillRect(sx + 20, sy, 4, TILE);
+    ctx.fillStyle = '#6a4a1a';
+    ctx.fillRect(sx + 6, sy + 8, 20, 4);
+    ctx.fillRect(sx + 6, sy + 20, 20, 4);
+  }
+
+  // --- Moving ladders ---
+  for (const l of d.movingLadders) {
+    const sx = l.x * TILE, sy = l.y * TILE;
+    ctx.fillStyle = '#8a5a2a';
+    ctx.fillRect(sx + 8, sy, 4, TILE);
+    ctx.fillRect(sx + 20, sy, 4, TILE);
+    ctx.fillStyle = '#6a4a1a';
+    ctx.fillRect(sx + 6, sy + 8, 20, 4);
+    ctx.fillRect(sx + 6, sy + 20, 20, 4);
+    // Range indicator
+    ctx.fillStyle = 'rgba(138,90,42,0.3)';
+    ctx.fillRect(sx, sy - 4, TILE, l.range);
+  }
+
+  // --- Springs ---
+  for (const s of d.springs) {
+    const sx = s.x * TILE, sy = s.y * TILE;
+    ctx.fillStyle = '#e04030';
+    ctx.fillRect(sx + 4, sy + 16, TILE - 8, 8);
+    ctx.fillStyle = '#c03020';
+    ctx.fillRect(sx + 8, sy + 12, TILE - 16, 4);
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(sx + 12, sy + 8, TILE - 24, 4);
+  }
+
+  // --- Conveyors ---
+  for (const c of d.conveyors) {
+    const sx = c.x * TILE, sy = c.y * TILE;
+    const w = c.w * TILE;
+    ctx.fillStyle = '#4a4a4a';
+    ctx.fillRect(sx, sy + 16, w, 8);
+    ctx.fillStyle = '#6a6a6a';
+    for (let i = 0; i < Math.floor(w / 16); i++) {
+      ctx.fillRect(sx + 8 + i * 16, sy + 18, 4, 4);
+    }
+  }
+
+  // --- Fire floors ---
+  for (const f of d.fireFloors) {
+    const sx = f.x * TILE, sy = f.y * TILE;
+    const w = f.w * TILE;
+    ctx.fillStyle = '#e04030';
+    ctx.fillRect(sx, sy + 16, w, 8);
+    ctx.fillStyle = '#ffd700';
+    for (let i = 0; i < Math.floor(w / 16); i++) {
+      ctx.fillRect(sx + 8 + i * 16, sy + 12, 4, 8);
+    }
+  }
+
+  // --- Enemies ---
+  const ENEMY_COLORS = {
+    walk: { body: '#8b5a2b', top: '#a07040' },
+    fast: { body: '#c04030', top: '#d06050' },
+    jump: { body: '#7040a0', top: '#9060c0' },
+    fly: { body: '#4080c0', top: '#60a0e0' },
+    shooter: { body: '#6040a0', top: '#403080' }
+  };
+  for (const e of d.enemies) {
+    const sx = e.x * TILE, sy = e.feetRow * TILE;
+    const color = ENEMY_COLORS[e.type] || ENEMY_COLORS.walk;
+    const w = 26, h = 26;
+    ctx.save();
+    ctx.translate(sx + TILE / 2, sy + TILE / 2);
+    if (e.dir < 0) ctx.scale(-1, 1);
+    ctx.fillStyle = color.body;
+    ctx.fillRect(-w / 2, -h / 2 + 2, w, h - 6);
+    ctx.fillStyle = color.top;
+    ctx.fillRect(-w / 2 + 2, -h / 2, w - 4, 4);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(-6, -6, 5, 5);
+    ctx.fillRect(2, -6, 5, 5);
+    ctx.fillStyle = '#202020';
+    ctx.fillRect(-5, -5, 3, 3);
+    ctx.fillRect(3, -5, 3, 3);
+    ctx.fillStyle = '#604020';
+    ctx.fillRect(-w / 2 + 1, h / 2 - 4, 7, 4);
+    ctx.fillRect(w / 2 - 8, h / 2 - 4, 7, 4);
+    ctx.restore();
+  }
+
+  // --- Coins ---
+  for (const c of d.coins) {
+    const sx = c.x * TILE, sy = c.y * TILE;
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(sx + 4, sy + 4, 16, 16);
+    ctx.fillStyle = '#fff7c0';
+    ctx.fillRect(sx + 8, sy + 8, 8, 8);
+  }
+
+  // --- Checkpoints ---
+  for (const cp of d.checkpoints) {
+    const sx = cp.x * TILE, sy = cp.feetRow * TILE;
+    ctx.fillStyle = '#808080';
+    ctx.fillRect(sx + 6, sy + 10, 10, 20);
+    ctx.fillStyle = '#c0c0c0';
+    ctx.fillRect(sx + 10, sy + 12, 14, 10);
+  }
+
+  // --- Selection highlight ---
+  if (selectionRect) {
+    const { x1, y1, x2, y2 } = selectionRect;
+    ctx.strokeStyle = '#ff00ff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x1 * TILE, y1 * TILE, (x2 - x1 + 1) * TILE, (y2 - y1 + 1) * TILE);
+  }
+
+  // --- Selected element highlight ---
+  if (selectedElement) {
+    const e = selectedElement;
+    ctx.strokeStyle = '#00ff00';
+    ctx.lineWidth = 2;
+    if (e.type === 'platform' || e.type === 'moving-platform' || e.type === 'vertical-platform' || e.type === 'breakable-platform' || e.type === 'pipe' || e.type === 'conveyor' || e.type === 'fire-floor') {
+      ctx.strokeRect(e.x * TILE, e.y * TILE, (e.w || 1) * TILE, (e.h || 1) * TILE);
+    } else {
+      ctx.strokeRect(e.x * TILE, e.y * TILE, TILE, TILE);
+    }
+  }
+}
+
+// ===== Click Handling =====
+function getCellFromEvent(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.floor((e.clientX - rect.left) / TILE);
+  const y = Math.floor((e.clientY - rect.top) / TILE);
+  if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return null;
+  return { x, y };
+}
+
+canvas.addEventListener('mousedown', (e) => {
+  const cell = getCellFromEvent(e);
+  if (!cell) return;
+  if (currentTool === 'select') {
+    selectElementAt(cell.x, cell.y);
+    return;
+  }
+  if (currentTool === 'gap') {
+    toggleGap(cell.x);
+    return;
+  }
+  if (currentTool === 'delete') {
+    selectElementAt(cell.x, cell.y);
+    if (selectedElement) {
+      const d = getPatData();
+      removeElementFromData(d, selectedElement);
+      undoStack.push({ action: 'remove', patternId: currentPatId, element: selectedElement });
+      redoStack = [];
+      setPatData(d);
+      selectedElement = null;
+      renderGrid();
+      renderProps();
+      validate();
+    }
+    return;
+  }
+  dragStart = cell;
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  const cell = getCellFromEvent(e);
+  if (!cell) return;
+  lastMouseCell = cell;
+  if (!dragStart) return;
+  selectionRect = {
+    x1: Math.min(dragStart.x, cell.x),
+    y1: Math.min(dragStart.y, cell.y),
+    x2: Math.max(dragStart.x, cell.x),
+    y2: Math.max(dragStart.y, cell.y)
+  };
+  renderGrid();
+});
+
+canvas.addEventListener('mouseup', (e) => {
+  if (!dragStart) return;
+  const cell = getCellFromEvent(e);
+  if (!cell) { dragStart = null; selectionRect = null; renderGrid(); return; }
+
+  if (currentTool === 'gap') { dragStart = null; return; }
+
+  const x1 = Math.min(dragStart.x, cell.x);
+  const y1 = Math.min(dragStart.y, cell.y);
+  const x2 = Math.max(dragStart.x, cell.x);
+  const y2 = Math.max(dragStart.y, cell.y);
+  dragStart = null;
+
+  placeElement(x1, y1, x2, y2);
+  selectionRect = null;
+  renderGrid();
+  renderProps();
+  validate();
+});
+
+function toggleGap(col) {
+  const d = getPatData();
+  const idx = d.gaps.indexOf(col);
+  if (idx >= 0) {
+    d.gaps.splice(idx, 1);
+    undoStack.push({ action: 'add', patternId: currentPatId, element: { type: 'gap', x: col, y: ROWS - 1 } });
+    redoStack = [];
+  } else {
+    d.gaps.push(col);
+    d.gaps.sort((a, b) => a - b);
+    undoStack.push({ action: 'remove', patternId: currentPatId, element: { type: 'gap', x: col, y: ROWS - 1 } });
+    redoStack = [];
+  }
+  setPatData(d);
+  renderGrid();
+  validate();
+}
+
+function placeElement(x1, y1, x2, y2) {
+  const d = getPatData();
+  const w = x2 - x1 + 1;
+  const h = y2 - y1 + 1;
+
+  switch (currentTool) {
+    case 'coin':
+      d.coins.push({ x: x1, y: y1 });
+      undoStack.push({ action: 'add', patternId: currentPatId, element: { type: 'coin', x: x1, y: y1 } });
+      break;
+    case 'enemy': {
+      const spd = enemyType === 'fast' ? 1.2 : enemyType === 'fly' ? 1.0 : 0.8;
+      d.enemies.push({ x: x1, feetRow: y1, speed: spd, dir: 1, type: enemyType });
+      undoStack.push({ action: 'add', patternId: currentPatId, element: { type: 'enemy', x: x1, feetRow: y1, speed: spd, dir: 1, type: enemyType } });
+      break;
+    }
+    case 'platform':
+      d.platforms.push({ x: x1, y: y1, w, h });
+      undoStack.push({ action: 'add', patternId: currentPatId, element: { type: 'platform', x: x1, y: y1, w, h } });
+      break;
+    case 'moving-platform':
+      d.movingPlatforms.push({ x: x1, y: y1, w, range: 32, speed: 0.05 });
+      undoStack.push({ action: 'add', patternId: currentPatId, element: { type: 'moving-platform', x: x1, y: y1, w, range: 32, speed: 0.05 } });
+      break;
+    case 'vertical-platform':
+      d.verticalPlatforms.push({ x: x1, y: y1, w, range: 32, speed: 0.05 });
+      undoStack.push({ action: 'add', patternId: currentPatId, element: { type: 'vertical-platform', x: x1, y: y1, w, range: 32, speed: 0.05 } });
+      break;
+    case 'breakable-platform':
+      d.breakablePlatforms.push({ x: x1, y: y1, w, h });
+      undoStack.push({ action: 'add', patternId: currentPatId, element: { type: 'breakable-platform', x: x1, y: y1, w, h } });
+      break;
+    case 'pipe':
+      d.pipes.push({ x: x1, y: y1, w, h });
+      undoStack.push({ action: 'add', patternId: currentPatId, element: { type: 'pipe', x: x1, y: y1, w, h } });
+      break;
+    case 'block':
+      d.blocks.push({ x: x1, y: y1, type: 'q', content: 'mushroom' });
+      undoStack.push({ action: 'add', patternId: currentPatId, element: { type: 'block', x: x1, y: y1, type: 'q', content: 'mushroom' } });
+      break;
+    case 'hidden-block':
+      d.hiddenBlocks.push({ x: x1, y: y1, content: 'coin' });
+      undoStack.push({ action: 'add', patternId: currentPatId, element: { type: 'hidden-block', x: x1, y: y1, content: 'coin' } });
+      break;
+    case 'ladder':
+      d.ladders.push({ x: x1, y: y1 });
+      undoStack.push({ action: 'add', patternId: currentPatId, element: { type: 'ladder', x: x1, y: y1 } });
+      break;
+    case 'moving-ladder':
+      d.movingLadders.push({ x: x1, y: y1, range: 32, speed: 0.05 });
+      undoStack.push({ action: 'add', patternId: currentPatId, element: { type: 'moving-ladder', x: x1, y: y1, range: 32, speed: 0.05 } });
+      break;
+    case 'spring':
+      d.springs.push({ x: x1, y: y1, power: 15 });
+      undoStack.push({ action: 'add', patternId: currentPatId, element: { type: 'spring', x: x1, y: y1, power: 15 } });
+      break;
+    case 'conveyor':
+      d.conveyors.push({ x: x1, y: y1, w, speed: 2, dir: 1 });
+      undoStack.push({ action: 'add', patternId: currentPatId, element: { type: 'conveyor', x: x1, y: y1, w, speed: 2, dir: 1 } });
+      break;
+    case 'fire-floor':
+      d.fireFloors.push({ x: x1, y: y1, w });
+      undoStack.push({ action: 'add', patternId: currentPatId, element: { type: 'fire-floor', x: x1, y: y1, w } });
+      break;
+    case 'checkpoint':
+      d.checkpoints.push({ x: x1, feetRow: y1 });
+      undoStack.push({ action: 'add', patternId: currentPatId, element: { type: 'checkpoint', x: x1, feetRow: y1 } });
+      break;
+  }
+  redoStack = [];
+  setPatData(d);
+  selectedElement = { type: currentTool, x: x1, y: y1, w, h };
+}
+
+function selectElementAt(x, y) {
+  const d = getPatData();
+  selectedElement = null;
+
+  for (const c of d.coins) { if (c.x === x && c.y === y) { selectedElement = { type: 'coin', x, y }; return; } }
+  for (const e of d.enemies) { if (e.x === x && e.feetRow === y) { selectedElement = { type: 'enemy', x, y: y, speed: e.speed, dir: e.dir, type: e.type }; return; } }
+  for (const b of d.blocks) { if (b.x === x && b.y === y) { selectedElement = { type: 'block', x, y, type: b.type, content: b.content }; return; } }
+  for (const b of d.hiddenBlocks) { if (b.x === x && b.y === y) { selectedElement = { type: 'hidden-block', x, y, content: b.content }; return; } }
+  for (const l of d.ladders) { if (l.x === x && l.y === y) { selectedElement = { type: 'ladder', x, y }; return; } }
+  for (const l of d.movingLadders) { if (l.x === x && l.y === y) { selectedElement = { type: 'moving-ladder', x, y, range: l.range, speed: l.speed }; return; } }
+  for (const s of d.springs) { if (s.x === x && s.y === y) { selectedElement = { type: 'spring', x, y, power: s.power }; return; } }
+  for (const cp of d.checkpoints) { if (cp.x === x && cp.feetRow === y) { selectedElement = { type: 'checkpoint', x, y }; return; } }
+
+  for (const p of d.platforms) { if (x >= p.x && x < p.x + p.w && y >= p.y && y < p.y + p.h) { selectedElement = { type: 'platform', x: p.x, y: p.y, w: p.w, h: p.h }; return; } }
+  for (const p of d.movingPlatforms) { if (x >= p.x && x < p.x + p.w && y === p.y) { selectedElement = { type: 'moving-platform', x: p.x, y: p.y, w: p.w, range: p.range, speed: p.speed }; return; } }
+  for (const p of d.verticalPlatforms) { if (x >= p.x && x < p.x + p.w && y === p.y) { selectedElement = { type: 'vertical-platform', x: p.x, y: p.y, w: p.w, range: p.range, speed: p.speed }; return; } }
+  for (const p of d.breakablePlatforms) { if (x >= p.x && x < p.x + p.w && y >= p.y && y < p.y + p.h) { selectedElement = { type: 'breakable-platform', x: p.x, y: p.y, w: p.w, h: p.h }; return; } }
+  for (const p of d.pipes) { if (x >= p.x && x < p.x + p.w && y >= p.y && y < p.y + p.h) { selectedElement = { type: 'pipe', x: p.x, y: p.y, w: p.w, h: p.h }; return; } }
+  for (const c of d.conveyors) { if (x >= c.x && x < c.x + c.w && y === c.y) { selectedElement = { type: 'conveyor', x: c.x, y: c.y, w: c.w, speed: c.speed, dir: c.dir }; return; } }
+  for (const f of d.fireFloors) { if (x >= f.x && x < f.x + f.w && y === f.y) { selectedElement = { type: 'fire-floor', x: f.x, y: f.y, w: f.w }; return; } }
+
+  if (d.gaps.includes(x) && y >= ROWS - 2) { selectedElement = { type: 'gap', x, y }; return; }
+}
+
+// ===== Properties Panel =====
+function renderProps() {
+  const panel = document.getElementById('prop-panel');
+  if (!selectedElement) {
+    panel.innerHTML = `<div class="prop-row"><label>—</label><span style="font-size:11px;color:#888">${t('select_el')}</span></div>`;
+    return;
+  }
+  const e = selectedElement;
+  let html = `<div class="prop-row"><label>${t('type')}</label><span>${e.type}</span></div>`;
+
+  switch (e.type) {
+    case 'enemy':
+      html += `<div class="prop-row"><label>${t('type')}</label><select id="prop-enemy-type">${['walk','fast','jump','fly','shooter'].map(t => `<option value="${t}" ${e.type===t?'selected':''}>${t}</option>`).join('')}</select></div>`;
+      html += `<div class="prop-row"><label>${t('speed')}</label><input id="prop-enemy-speed" type="number" step="0.1" value="${e.speed}"></div>`;
+      html += `<div class="prop-row"><label>${t('dir')}</label><select id="prop-enemy-dir"><option value="1" ${e.dir===1?'selected':''}>1 (right)</option><option value="-1" ${e.dir===-1?'selected':''}>-1 (left)</option></select></div>`;
+      break;
+    case 'moving-platform':
+    case 'vertical-platform':
+      html += `<div class="prop-row"><label>${t('range')}</label><input id="prop-range" type="number" value="${e.range}"></div>`;
+      html += `<div class="prop-row"><label>${t('speed')}</label><input id="prop-speed" type="number" step="0.01" value="${e.speed}"></div>`;
+      break;
+    case 'spring':
+      html += `<div class="prop-row"><label>${t('power')}</label><input id="prop-power" type="number" value="${e.power}"></div>`;
+      break;
+    case 'conveyor':
+      html += `<div class="prop-row"><label>${t('speed')}</label><input id="prop-speed" type="number" value="${e.speed}"></div>`;
+      html += `<div class="prop-row"><label>${t('dir')}</label><select id="prop-dir"><option value="1" ${e.dir===1?'selected':''}>1</option><option value="-1" ${e.dir===-1?'selected':''}>-1</option></select></div>`;
+      break;
+    case 'block':
+      html += `<div class="prop-row"><label>${t('type')}</label><select id="prop-block-type"><option value="q" ${e.type==='q'?'selected':''}>q</option><option value="brick" ${e.type==='brick'?'selected':''}>brick</option></select></div>`;
+      html += `<div class="prop-row"><label>${t('content')}</label><input id="prop-content" value="${e.content||''}"></div>`;
+      break;
+    case 'hidden-block':
+      html += `<div class="prop-row"><label>${t('content')}</label><input id="prop-content" value="${e.content||''}"></div>`;
+      break;
+    default:
+      html += `<div class="prop-row"><label>${t('width')}</label><input id="prop-w" type="number" value="${e.w||1}"></div>`;
+      if (e.h) html += `<div class="prop-row"><label>${t('height')}</label><input id="prop-h" type="number" value="${e.h}"></div>`;
+  }
+
+  html += `<div class="prop-row"><button class="tool-btn" id="btn-delete-el" style="background:#444455;border-color:#ff4444;color:#ff4444">${t('delete_el')}</button></div>`;
+  panel.innerHTML = html;
+
+  const delBtn = document.getElementById('btn-delete-el');
+  if (delBtn) delBtn.onclick = () => deleteSelectedElement();
+
+  const rangeInput = document.getElementById('prop-range');
+  if (rangeInput) rangeInput.onchange = () => { e.range = parseInt(rangeInput.value); applySelectedElement(); };
+  const speedInput = document.getElementById('prop-speed');
+  if (speedInput) speedInput.onchange = () => { e.speed = parseFloat(speedInput.value); applySelectedElement(); };
+  const powerInput = document.getElementById('prop-power');
+  if (powerInput) powerInput.onchange = () => { e.power = parseInt(powerInput.value); applySelectedElement(); };
+  const dirSel = document.getElementById('prop-dir');
+  if (dirSel) dirSel.onchange = () => { e.dir = parseInt(dirSel.value); applySelectedElement(); };
+  const enemyTypeSel = document.getElementById('prop-enemy-type');
+  if (enemyTypeSel) enemyTypeSel.onchange = () => { e.type = enemyTypeSel.value; applySelectedElement(); };
+  const enemySpeedInput = document.getElementById('prop-enemy-speed');
+  if (enemySpeedInput) enemySpeedInput.onchange = () => { e.speed = parseFloat(enemySpeedInput.value); applySelectedElement(); };
+  const enemyDirSel = document.getElementById('prop-enemy-dir');
+  if (enemyDirSel) enemyDirSel.onchange = () => { e.dir = parseInt(enemyDirSel.value); applySelectedElement(); };
+  const blockTypeSel = document.getElementById('prop-block-type');
+  if (blockTypeSel) blockTypeSel.onchange = () => { e.type = blockTypeSel.value; applySelectedElement(); };
+  const contentInput = document.getElementById('prop-content');
+  if (contentInput) contentInput.onchange = () => { e.content = contentInput.value; applySelectedElement(); };
+  const wInput = document.getElementById('prop-w');
+  if (wInput) wInput.onchange = () => { e.w = parseInt(wInput.value); applySelectedElement(); };
+  const hInput = document.getElementById('prop-h');
+  if (hInput) hInput.onchange = () => { e.h = parseInt(hInput.value); applySelectedElement(); };
+}
+
+function applySelectedElement() {
+  const d = getPatData();
+  const e = selectedElement;
+  const oldSnap = { ...e };
+  removeElementFromData(d, e);
+  addElementToData(d, e);
+  undoStack.push({ action: 'modify', patternId: currentPatId, oldElement: oldSnap, newElement: { ...e } });
+  redoStack = [];
+  setPatData(d);
+  renderGrid();
+  validate();
+}
+
+function removeElementFromData(d, e) {
+  switch (e.type) {
+    case 'gap': d.gaps = d.gaps.filter(g => g !== e.x); break;
+    case 'coin': d.coins = d.coins.filter(c => !(c.x === e.x && c.y === e.y)); break;
+    case 'enemy': d.enemies = d.enemies.filter(en => !(en.x === e.x && en.feetRow === e.y)); break;
+    case 'platform': d.platforms = d.platforms.filter(p => !(p.x === e.x && p.y === e.y && p.w === e.w && p.h === e.h)); break;
+    case 'moving-platform': d.movingPlatforms = d.movingPlatforms.filter(p => !(p.x === e.x && p.y === e.y && p.w === e.w)); break;
+    case 'vertical-platform': d.verticalPlatforms = d.verticalPlatforms.filter(p => !(p.x === e.x && p.y === e.y && p.w === e.w)); break;
+    case 'breakable-platform': d.breakablePlatforms = d.breakablePlatforms.filter(p => !(p.x === e.x && p.y === e.y && p.w === e.w && p.h === e.h)); break;
+    case 'pipe': d.pipes = d.pipes.filter(p => !(p.x === e.x && p.y === e.y && p.w === e.w && p.h === e.h)); break;
+    case 'block': d.blocks = d.blocks.filter(b => !(b.x === e.x && b.y === e.y)); break;
+    case 'hidden-block': d.hiddenBlocks = d.hiddenBlocks.filter(b => !(b.x === e.x && b.y === e.y)); break;
+    case 'ladder': d.ladders = d.ladders.filter(l => !(l.x === e.x && l.y === e.y)); break;
+    case 'moving-ladder': d.movingLadders = d.movingLadders.filter(l => !(l.x === e.x && l.y === e.y)); break;
+    case 'spring': d.springs = d.springs.filter(s => !(s.x === e.x && s.y === e.y)); break;
+    case 'conveyor': d.conveyors = d.conveyors.filter(c => !(c.x === e.x && c.y === e.y && c.w === e.w)); break;
+    case 'fire-floor': d.fireFloors = d.fireFloors.filter(f => !(f.x === e.x && f.y === e.y && f.w === e.w)); break;
+    case 'checkpoint': d.checkpoints = d.checkpoints.filter(cp => !(cp.x === e.x && cp.feetRow === e.y)); break;
+  }
+}
+
+function addElementToData(d, e) {
+  switch (e.type) {
+    case 'gap': d.gaps.push(e.x); d.gaps.sort((a,b)=>a-b); break;
+    case 'coin': d.coins.push({x:e.x,y:e.y}); break;
+    case 'enemy': d.enemies.push({x:e.x,feetRow:e.y,speed:e.speed,dir:e.dir,type:e.type}); break;
+    case 'platform': d.platforms.push({x:e.x,y:e.y,w:e.w,h:e.h}); break;
+    case 'moving-platform': d.movingPlatforms.push({x:e.x,y:e.y,w:e.w,range:e.range,speed:e.speed}); break;
+    case 'vertical-platform': d.verticalPlatforms.push({x:e.x,y:e.y,w:e.w,range:e.range,speed:e.speed}); break;
+    case 'breakable-platform': d.breakablePlatforms.push({x:e.x,y:e.y,w:e.w,h:e.h}); break;
+    case 'pipe': d.pipes.push({x:e.x,y:e.y,w:e.w,h:e.h}); break;
+    case 'block': d.blocks.push({x:e.x,y:e.y,type:e.type,content:e.content}); break;
+    case 'hidden-block': d.hiddenBlocks.push({x:e.x,y:e.y,content:e.content}); break;
+    case 'ladder': d.ladders.push({x:e.x,y:e.y}); break;
+    case 'moving-ladder': d.movingLadders.push({x:e.x,y:e.y,range:e.range,speed:e.speed}); break;
+    case 'spring': d.springs.push({x:e.x,y:e.y,power:e.power}); break;
+    case 'conveyor': d.conveyors.push({x:e.x,y:e.y,w:e.w,speed:e.speed,dir:e.dir}); break;
+    case 'fire-floor': d.fireFloors.push({x:e.x,y:e.y,w:e.w}); break;
+    case 'checkpoint': d.checkpoints.push({x:e.x,feetRow:e.y}); break;
+  }
+}
+
+function deleteSelectedElement() {
+  if (!selectedElement) return;
+  const d = getPatData();
+  removeElementFromData(d, selectedElement);
+  undoStack.push({ action: 'remove', patternId: currentPatId, element: selectedElement });
+  redoStack = [];
+  setPatData(d);
+  selectedElement = null;
+  renderGrid();
+  renderProps();
+  validate();
+}
+
+// ===== Pattern List =====
+function renderPatList() {
+  const list = document.getElementById('pat-list');
+  const filter = document.getElementById('cat-filter').value;
+  const stageFilter = parseInt(document.getElementById('stage-filter').value);
+  list.innerHTML = '';
+  for (const id of Object.keys(PATTERNS)) {
+    const p = PATTERNS[id];
+    let cat = 'generic';
+    if (id.startsWith('s')) cat = 'anchor';
+    else if (id.startsWith('v-')) cat = 'variation';
+    else if (id.startsWith('boss')) cat = 'boss';
+    if (filter !== 'all' && cat !== filter) continue;
+    if (stageFilter >= 0 && !MAIN_STAGE_CONFIGS[stageFilter].patterns.includes(id)) continue;
+    const li = document.createElement('li');
+    li.className = id === currentPatId ? 'active' : '';
+    li.innerHTML = `<span>${p.name}</span><br><span class="cat">${id} | diff ${p.difficulty}</span>`;
+    li.onclick = () => { currentPatId = id; renderPatList(); renderGrid(); renderProps(); renderHeader(); validate(); };
+    list.appendChild(li);
+  }
+}
+
+function renderHeader() {
+  const p = getPat();
+  document.getElementById('hdr-name').textContent = p.name;
+  document.getElementById('hdr-meta').textContent = `${p.id} | width ${p.width} | diff ${p.difficulty}`;
+}
+
+// ===== Stage Composition =====
+function renderStageEditor() {
+  const container = document.getElementById('stage-editor');
+  container.innerHTML = '';
+  for (let i = 0; i < MAIN_STAGE_CONFIGS.length; i++) {
+    const cfg = MAIN_STAGE_CONFIGS[i];
+    const row = document.createElement('div');
+    row.className = 'stage-row';
+    row.innerHTML = `<span class="stage-label">${t('stage')} ${i+1}</span>`;
+    const tags = document.createElement('div');
+    tags.className = 'pat-tags';
+    cfg.patterns.forEach((pid, idx) => {
+      const tag = document.createElement('span');
+      tag.className = 'pat-tag';
+      tag.textContent = pid;
+      tag.onclick = () => {
+        cfg.patterns.splice(idx, 1);
+        renderStageEditor();
+        validate();
+      };
+      tags.appendChild(tag);
+    });
+    const addBtn = document.createElement('span');
+    addBtn.className = 'pat-tag';
+    addBtn.textContent = t('add');
+    addBtn.style.borderColor = '#ffcc00';
+    addBtn.style.color = '#ffcc00';
+    addBtn.onclick = () => {
+      const pid = prompt(t('prompt_add'));
+      if (pid && PATTERNS[pid]) {
+        cfg.patterns.push(pid);
+        renderStageEditor();
+        validate();
+      }
+    };
+    tags.appendChild(addBtn);
+    row.appendChild(tags);
+
+    const bgSel = document.createElement('select');
+    bgSel.className = 'bg-sel';
+    for (let b = 0; b < STAGE_BGS.length; b++) {
+      const opt = document.createElement('option');
+      opt.value = b;
+      opt.textContent = `${t('bg')} ${b}`;
+      if (cfg.bg === STAGE_BGS[b]) opt.selected = true;
+      bgSel.appendChild(opt);
+    }
+    bgSel.onchange = () => { cfg.bg = STAGE_BGS[parseInt(bgSel.value)]; renderStageEditor(); };
+    row.appendChild(bgSel);
+
+    const scrollSel = document.createElement('select');
+    scrollSel.className = 'scroll-sel';
+    const s0 = document.createElement('option'); s0.value = '0'; s0.textContent = `${t('scroll')} 0`;
+    const s1 = document.createElement('option'); s1.value = '1'; s1.textContent = `${t('scroll')} 1`;
+    if (cfg.scroll === 0) s0.selected = true; else s1.selected = true;
+    scrollSel.appendChild(s0); scrollSel.appendChild(s1);
+    scrollSel.onchange = () => { cfg.scroll = parseFloat(scrollSel.value); renderStageEditor(); };
+    row.appendChild(scrollSel);
+
+    container.appendChild(row);
+  }
+  const extraRow = document.createElement('div');
+  extraRow.className = 'stage-row';
+  extraRow.innerHTML = `<span class="stage-label">${t('extra')}</span>`;
+  const extraTags = document.createElement('div');
+  extraTags.className = 'pat-tags';
+  extraTags.innerHTML = '<span class="pat-tag" style="color:#888">random (seed-based)</span>';
+  extraRow.appendChild(extraTags);
+  container.appendChild(extraRow);
+}
+
+// ===== Validation =====
+function validate() {
+  const d = getPatData();
+  const gapSet = new Set(d.gaps);
+  const issues = [];
+
+  for (const e of d.enemies) {
+    if (e.type !== 'fly' && gapSet.has(e.x)) {
+      issues.push({ level: 'warn', msg: t('enemy_gap', e.type, e.x) });
+    }
+  }
+  for (const p of d.platforms) {
+    for (let dx = 0; dx < p.w; dx++) {
+      if (gapSet.has(p.x + dx) && p.y >= ROWS - 2) {
+        issues.push({ level: 'warn', msg: t('plat_gap', p.x) });
+        break;
+      }
+    }
+  }
+  for (const c of d.coins) { if (c.x < 0 || c.x >= COLS || c.y < 0 || c.y >= ROWS) issues.push({ level: 'error', msg: t('coin_oob', c.x, c.y) }); }
+  for (const e of d.enemies) { if (e.x < 0 || e.x >= COLS || e.feetRow < 0 || e.feetRow >= ROWS) issues.push({ level: 'error', msg: t('enemy_oob', e.x, e.feetRow) }); }
+  for (const p of d.platforms) { if (p.x < 0 || p.x + p.w > COLS || p.y < 0 || p.y + p.h > ROWS) issues.push({ level: 'error', msg: t('plat_oob') }); }
+
+  const v = document.getElementById('validation');
+  if (issues.length === 0) {
+    v.innerHTML = `<div class="v-item v-ok">${t('no_issues')}</div>`;
+  } else {
+    v.innerHTML = issues.map(i => `<div class="v-item v-${i.level}">${i.level === 'error' ? '✗' : '⚠'} ${i.msg}</div>`).join('');
+  }
+}
+
+// ===== Copy / Paste =====
+function doCopy() {
+  if (!selectionRect) { alert(t('sel_region')); return; }
+  const d = getPatData();
+  const { x1, y1, x2, y2 } = selectionRect;
+  clipboard = [];
+  for (const c of d.coins) { if (c.x >= x1 && c.x <= x2 && c.y >= y1 && c.y <= y2) clipboard.push({ type: 'coin', x: c.x - x1, y: c.y - y1 }); }
+  for (const e of d.enemies) { if (e.x >= x1 && e.x <= x2 && e.feetRow >= y1 && e.feetRow <= y2) clipboard.push({ type: 'enemy', x: e.x - x1, y: e.feetRow - y1, speed: e.speed, dir: e.dir, type: e.type }); }
+  for (const b of d.blocks) { if (b.x >= x1 && b.x <= x2 && b.y >= y1 && b.y <= y2) clipboard.push({ type: 'block', x: b.x - x1, y: b.y - y1, type: b.type, content: b.content }); }
+  for (const b of d.hiddenBlocks) { if (b.x >= x1 && b.x <= x2 && b.y >= y1 && b.y <= y2) clipboard.push({ type: 'hidden-block', x: b.x - x1, y: b.y - y1, content: b.content }); }
+  for (const l of d.ladders) { if (l.x >= x1 && l.x <= x2 && l.y >= y1 && l.y <= y2) clipboard.push({ type: 'ladder', x: l.x - x1, y: l.y - y1 }); }
+  for (const l of d.movingLadders) { if (l.x >= x1 && l.x <= x2 && l.y >= y1 && l.y <= y2) clipboard.push({ type: 'moving-ladder', x: l.x - x1, y: l.y - y1, range: l.range, speed: l.speed }); }
+  for (const s of d.springs) { if (s.x >= x1 && s.x <= x2 && s.y >= y1 && s.y <= y2) clipboard.push({ type: 'spring', x: s.x - x1, y: s.y - y1, power: s.power }); }
+  for (const cp of d.checkpoints) { if (cp.x >= x1 && cp.x <= x2 && cp.feetRow >= y1 && cp.feetRow <= y2) clipboard.push({ type: 'checkpoint', x: cp.x - x1, y: cp.feetRow - y1 }); }
+  for (const g of d.gaps) { if (g >= x1 && g <= x2) clipboard.push({ type: 'gap', x: g - x1, y: 0 }); }
+  for (const p of d.platforms) { if (p.x >= x1 && p.x + p.w - 1 <= x2 && p.y >= y1 && p.y + p.h - 1 <= y2) clipboard.push({ type: 'platform', x: p.x - x1, y: p.y - y1, w: p.w, h: p.h }); }
+  for (const p of d.movingPlatforms) { if (p.x >= x1 && p.x + p.w - 1 <= x2 && p.y >= y1 && p.y <= y2) clipboard.push({ type: 'moving-platform', x: p.x - x1, y: p.y - y1, w: p.w, range: p.range, speed: p.speed }); }
+  for (const p of d.verticalPlatforms) { if (p.x >= x1 && p.x + p.w - 1 <= x2 && p.y >= y1 && p.y <= y2) clipboard.push({ type: 'vertical-platform', x: p.x - x1, y: p.y - y1, w: p.w, range: p.range, speed: p.speed }); }
+  for (const p of d.breakablePlatforms) { if (p.x >= x1 && p.x + p.w - 1 <= x2 && p.y >= y1 && p.y + p.h - 1 <= y2) clipboard.push({ type: 'breakable-platform', x: p.x - x1, y: p.y - y1, w: p.w, h: p.h }); }
+  for (const p of d.pipes) { if (p.x >= x1 && p.x + p.w - 1 <= x2 && p.y >= y1 && p.y + p.h - 1 <= y2) clipboard.push({ type: 'pipe', x: p.x - x1, y: p.y - y1, w: p.w, h: p.h }); }
+  for (const c of d.conveyors) { if (c.x >= x1 && c.x + c.w - 1 <= x2 && c.y >= y1 && c.y <= y2) clipboard.push({ type: 'conveyor', x: c.x - x1, y: c.y - y1, w: c.w, speed: c.speed, dir: c.dir }); }
+  for (const f of d.fireFloors) { if (f.x >= x1 && f.x + f.w - 1 <= x2 && f.y >= y1 && f.y <= y2) clipboard.push({ type: 'fire-floor', x: f.x - x1, y: f.y - y1, w: f.w }); }
+
+  selectionRect = null;
+  renderGrid();
+  alert(t('copied', clipboard.length));
+}
+
+function doPaste() {
+  if (clipboard.length === 0) { alert(t('clip_empty')); return; }
+  const d = getPatData();
+  const ox = lastMouseCell.x, oy = lastMouseCell.y;
+  const pasted = [];
+  for (const e of clipboard) {
+    const nx = e.x + ox, ny = e.y + oy;
+    if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) continue;
+    const pe = { ...e, x: nx, y: ny };
+    pasted.push(pe);
+    switch (e.type) {
+      case 'gap': if (!d.gaps.includes(nx)) d.gaps.push(nx); break;
+      case 'coin': d.coins.push({x:nx,y:ny}); break;
+      case 'enemy': d.enemies.push({x:nx,feetRow:ny,speed:e.speed,dir:e.dir,type:e.type}); break;
+      case 'platform': d.platforms.push({x:nx,y:ny,w:e.w,h:e.h}); break;
+      case 'moving-platform': d.movingPlatforms.push({x:nx,y:ny,w:e.w,range:e.range,speed:e.speed}); break;
+      case 'vertical-platform': d.verticalPlatforms.push({x:nx,y:ny,w:e.w,range:e.range,speed:e.speed}); break;
+      case 'breakable-platform': d.breakablePlatforms.push({x:nx,y:ny,w:e.w,h:e.h}); break;
+      case 'pipe': d.pipes.push({x:nx,y:ny,w:e.w,h:e.h}); break;
+      case 'block': d.blocks.push({x:nx,y:ny,type:e.type,content:e.content}); break;
+      case 'hidden-block': d.hiddenBlocks.push({x:nx,y:ny,content:e.content}); break;
+      case 'ladder': d.ladders.push({x:nx,y:ny}); break;
+      case 'moving-ladder': d.movingLadders.push({x:nx,y:ny,range:e.range,speed:e.speed}); break;
+      case 'spring': d.springs.push({x:nx,y:ny,power:e.power}); break;
+      case 'conveyor': d.conveyors.push({x:nx,y:ny,w:e.w,speed:e.speed,dir:e.dir}); break;
+      case 'fire-floor': d.fireFloors.push({x:nx,y:ny,w:e.w}); break;
+      case 'checkpoint': d.checkpoints.push({x:nx,feetRow:ny}); break;
+    }
+  }
+  d.gaps.sort((a,b)=>a-b);
+  undoStack.push({ action: 'paste', patternId: currentPatId, elements: pasted });
+  redoStack = [];
+  setPatData(d);
+  renderGrid();
+  validate();
+}
+
+// ===== Undo / Redo =====
+function doUndo() {
+  if (undoStack.length === 0) return;
+  const op = undoStack.pop();
+  redoStack.push(op);
+  const d = getPatData();
+  switch (op.action) {
+    case 'add':
+      removeElementFromData(d, op.element);
+      break;
+    case 'remove':
+      addElementToData(d, op.element);
+      break;
+    case 'modify':
+      removeElementFromData(d, op.newElement);
+      addElementToData(d, op.oldElement);
+      break;
+    case 'paste':
+      for (const e of op.elements) removeElementFromData(d, e);
+      break;
+  }
+  setPatData(d);
+  renderGrid();
+  renderProps();
+  validate();
+  updateUndoRedoButtons();
+}
+
+function doRedo() {
+  if (redoStack.length === 0) return;
+  const op = redoStack.pop();
+  undoStack.push(op);
+  const d = getPatData();
+  switch (op.action) {
+    case 'add':
+      addElementToData(d, op.element);
+      break;
+    case 'remove':
+      removeElementFromData(d, op.element);
+      break;
+    case 'modify':
+      removeElementFromData(d, op.oldElement);
+      addElementToData(d, op.newElement);
+      break;
+    case 'paste':
+      for (const e of op.elements) addElementToData(d, e);
+      break;
+  }
+  setPatData(d);
+  renderGrid();
+  renderProps();
+  validate();
+  updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons() {
+  document.getElementById('btn-undo').disabled = undoStack.length === 0;
+  document.getElementById('btn-redo').disabled = redoStack.length === 0;
+}
+
+// ===== Export =====
+function exportPatterns() {
+  let src = 'const PATTERNS = {};\nfunction addPattern(id, name, width, difficulty, data) {\n  PATTERNS[id] = Object.assign({ id, name, width, difficulty }, data);\n}\n\n';
+  for (const id of Object.keys(PATTERNS)) {
+    const p = PATTERNS[id];
+    const data = {};
+    if (p.gaps) data.gaps = p.gaps;
+    if (p.platforms) data.platforms = p.platforms;
+    if (p.pipes) data.pipes = p.pipes;
+    if (p.blocks) data.blocks = p.blocks;
+    if (p.hiddenBlocks) data.hiddenBlocks = p.hiddenBlocks;
+    if (p.ladders) data.ladders = p.ladders;
+    if (p.movingPlatforms) data.movingPlatforms = p.movingPlatforms;
+    if (p.verticalPlatforms) data.verticalPlatforms = p.verticalPlatforms;
+    if (p.breakablePlatforms) data.breakablePlatforms = p.breakablePlatforms;
+    if (p.movingLadders) data.movingLadders = p.movingLadders;
+    if (p.springs) data.springs = p.springs;
+    if (p.conveyors) data.conveyors = p.conveyors;
+    if (p.fireFloors) data.fireFloors = p.fireFloors;
+    if (p.enemies) data.enemies = p.enemies;
+    if (p.coins) data.coins = p.coins;
+    if (p.checkpoints) data.checkpoints = p.checkpoints;
+    src += `addPattern('${id}', '${p.name}', ${p.width}, ${p.difficulty}, ${JSON.stringify(data)});\n`;
+  }
+  document.getElementById('export-area').value = src;
+  const blob = new Blob([src], { type: 'text/javascript' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'patterns.js';
+  a.click();
+  URL.revokeObjectURL(url);
+  alert(t('pat_gen'));
+}
+
+function exportStages() {
+  let src = 'const STAGE_BGS = [';
+  src += STAGE_BGS.map(b => JSON.stringify(b)).join(', ');
+  src += '];\n';
+  src += 'const MAIN_STAGE_CONFIGS = [\n';
+  for (const cfg of MAIN_STAGE_CONFIGS) {
+    src += `  { patterns: ${JSON.stringify(cfg.patterns)}, bg: STAGE_BGS[${STAGE_BGS.indexOf(cfg.bg)}], scroll: ${cfg.scroll} },\n`;
+  }
+  src += '];\n';
+  src += `function buildStage(patternIds, bg, scrollSpeed) {\n  const stage = { width: 0, bg, patternIds: [...patternIds], gaps: [], platforms: [], pipes: [], blocks: [], hiddenBlocks: [], ladders: [], movingPlatforms: [], verticalPlatforms: [], breakablePlatforms: [], movingLadders: [], springs: [], conveyors: [], fireFloors: [], enemies: [], coins: [], checkpoints: [] };\n  if (scrollSpeed) stage.scrollSpeed = scrollSpeed;\n  let offset = 0;\n  for (const pid of patternIds) {\n    const p = PATTERNS[pid];\n    stage.width += p.width;\n    for (const g of p.gaps) stage.gaps.push(g + offset);\n    for (const pl of (p.platforms || [])) stage.platforms.push({ x: pl.x + offset, y: pl.y, w: pl.w, h: pl.h });\n    for (const pi of (p.pipes || [])) stage.pipes.push({ x: pi.x + offset, y: pi.y, w: pi.w, h: pi.h });\n    for (const b of (p.blocks || [])) stage.blocks.push({ x: b.x + offset, y: b.y, type: b.type, content: b.content });\n    for (const hb of (p.hiddenBlocks || [])) stage.hiddenBlocks.push({ x: hb.x + offset, y: hb.y, content: hb.content });\n    for (const l of (p.ladders || [])) stage.ladders.push({ x: l.x + offset, y: l.y });\n    for (const mp of (p.movingPlatforms || [])) stage.movingPlatforms.push({ x: mp.x + offset, y: mp.y, w: mp.w, range: mp.range, speed: mp.speed });\n    for (const vp of (p.verticalPlatforms || [])) stage.verticalPlatforms.push({ x: vp.x + offset, y: vp.y, w: vp.w, range: vp.range, speed: vp.speed });\n    for (const bp of (p.breakablePlatforms || [])) stage.breakablePlatforms.push({ x: bp.x + offset, y: bp.y, w: bp.w, h: bp.h });\n    for (const ml of (p.movingLadders || [])) stage.movingLadders.push({ x: ml.x + offset, y: ml.y, range: ml.range, speed: ml.speed });\n    for (const s of (p.springs || [])) stage.springs.push({ x: s.x + offset, y: s.y, power: s.power });\n    for (const c of (p.conveyors || [])) stage.conveyors.push({ x: c.x + offset, y: c.y, w: c.w, speed: c.speed, dir: c.dir });\n    for (const f of (p.fireFloors || [])) stage.fireFloors.push({ x: f.x + offset, y: f.y, w: f.w });\n    for (const e of (p.enemies || [])) stage.enemies.push({ x: e.x + offset, feetRow: e.feetRow, speed: e.speed, dir: e.dir, type: e.type });\n    for (const c of (p.coins || [])) stage.coins.push({ x: c.x + offset, y: c.y });\n    for (const cp of (p.checkpoints || [])) stage.checkpoints.push({ x: cp.x + offset, feetRow: cp.feetRow });\n    offset += p.width;\n  }\n  stage.gaps = [...new Set(stage.gaps)].sort((a, b) => a - b);\n  stage.flagX = stage.width - 5;\n  stage.playerStart = { x: 3, feetRow: 10 };\n  return stage;\n}\n`;
+  src += 'const STAGES = MAIN_STAGE_CONFIGS.map(cfg => buildStage(cfg.patterns, cfg.bg, cfg.scroll));\n';
+  src += 'const EXTRA_PATTERN_POOL = Object.keys(PATTERNS).filter(id => id !== \'boss-1\' && id !== \'boss-2\');\n';
+  src += 'let extraSeed = Date.now() % 2147483647;\n';
+  src += 'function seededRand(seed) {\n  let s = seed % 2147483647;\n  if (s <= 0) s += 2147483646;\n  return function () {\n    s = (s * 16807) % 2147483647;\n    return s / 2147483647;\n  };\n}\n';
+  src += 'function buildRandomStage(seed) {\n  const rand = seededRand(seed);\n  const count = 6 + Math.floor(rand() * 5);\n  const pool = [...EXTRA_PATTERN_POOL];\n  const ids = [];\n  for (let i = 0; i < count && pool.length > 0; i++) {\n    const idx = Math.floor(rand() * pool.length);\n    ids.push(pool.splice(idx, 1)[0]);\n  }\n  const bg = STAGE_BGS[Math.floor(rand() * STAGE_BGS.length)];\n  const scroll = rand() < 0.5 ? 0 : 1.0;\n  return buildStage(ids, bg, scroll);\n}\n';
+  src += 'let extraStage = buildRandomStage(extraSeed);\n';
+  document.getElementById('export-area').value = src;
+  const blob = new Blob([src], { type: 'text/javascript' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'stages.js';
+  a.click();
+  URL.revokeObjectURL(url);
+  alert(t('stage_gen'));
+}
+
+// ===== localStorage =====
+function saveToLS() {
+  const data = { patterns: {}, stageConfigs: MAIN_STAGE_CONFIGS.map(c => ({ patterns: [...c.patterns], bg: STAGE_BGS.indexOf(c.bg), scroll: c.scroll })) };
+  for (const id of Object.keys(PATTERNS)) {
+    const p = PATTERNS[id];
+    data.patterns[id] = { name: p.name, width: p.width, difficulty: p.difficulty, gaps: p.gaps||[], platforms: p.platforms||[], pipes: p.pipes||[], blocks: p.blocks||[], hiddenBlocks: p.hiddenBlocks||[], ladders: p.ladders||[], movingPlatforms: p.movingPlatforms||[], verticalPlatforms: p.verticalPlatforms||[], breakablePlatforms: p.breakablePlatforms||[], movingLadders: p.movingLadders||[], springs: p.springs||[], conveyors: p.conveyors||[], fireFloors: p.fireFloors||[], enemies: p.enemies||[], coins: p.coins||[], checkpoints: p.checkpoints||[] };
+  }
+  localStorage.setItem('pixelchip-editor', JSON.stringify(data));
+  alert(t('saved'));
+}
+
+function loadFromLS() {
+  const raw = localStorage.getItem('pixelchip-editor');
+  if (!raw) { alert(t('no_saved')); return; }
+  const data = JSON.parse(raw);
+  for (const id of Object.keys(data.patterns)) {
+    if (!PATTERNS[id]) continue;
+    const p = PATTERNS[id];
+    const d = data.patterns[id];
+    p.name = d.name; p.width = d.width; p.difficulty = d.difficulty;
+    p.gaps = d.gaps; p.platforms = d.platforms; p.pipes = d.pipes; p.blocks = d.blocks;
+    p.hiddenBlocks = d.hiddenBlocks; p.ladders = d.ladders; p.movingPlatforms = d.movingPlatforms;
+    p.verticalPlatforms = d.verticalPlatforms; p.breakablePlatforms = d.breakablePlatforms;
+    p.movingLadders = d.movingLadders; p.springs = d.springs; p.conveyors = d.conveyors;
+    p.fireFloors = d.fireFloors; p.enemies = d.enemies; p.coins = d.coins; p.checkpoints = d.checkpoints;
+  }
+  for (let i = 0; i < data.stageConfigs.length && i < MAIN_STAGE_CONFIGS.length; i++) {
+    MAIN_STAGE_CONFIGS[i].patterns = data.stageConfigs[i].patterns;
+    MAIN_STAGE_CONFIGS[i].bg = STAGE_BGS[data.stageConfigs[i].bg];
+    MAIN_STAGE_CONFIGS[i].scroll = data.stageConfigs[i].scroll;
+  }
+  renderPatList(); renderGrid(); renderProps(); renderHeader(); renderStageEditor(); validate();
+  alert(t('loaded'));
+}
+
+// ===== New Pattern =====
+function createNewPattern() {
+  const id = prompt(t('prompt_id'));
+  if (!id) return;
+  if (PATTERNS[id]) { alert(t('id_exists')); return; }
+  const name = prompt(t('prompt_name')) || id;
+  PATTERNS[id] = { id, name, width: 50, difficulty: 3, gaps: [], platforms: [], pipes: [], blocks: [], hiddenBlocks: [], ladders: [], movingPlatforms: [], verticalPlatforms: [], breakablePlatforms: [], movingLadders: [], springs: [], conveyors: [], fireFloors: [], enemies: [], coins: [], checkpoints: [] };
+  currentPatId = id;
+  renderPatList(); renderGrid(); renderProps(); renderHeader(); validate();
+}
+
+// ===== Keyboard shortcuts =====
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'z') { e.preventDefault(); doUndo(); }
+  if (e.ctrlKey && e.key === 'y') { e.preventDefault(); doRedo(); }
+  if (e.ctrlKey && e.key === 'c') { e.preventDefault(); doCopy(); }
+  if (e.ctrlKey && e.key === 'v') { e.preventDefault(); doPaste(); }
+});
+
+// ===== Language & Help =====
+document.getElementById('btn-lang').onclick = () => {
+  lang = lang === 'jp' ? 'en' : 'jp';
+  renderLang();
+};
+document.getElementById('btn-help').onclick = () => {
+  const hp = document.getElementById('help-panel');
+  hp.style.display = hp.style.display === 'none' ? 'block' : 'none';
+};
+document.getElementById('btn-help-close').onclick = () => {
+  document.getElementById('help-panel').style.display = 'none';
+};
+
+// ===== Tabs =====
+let activeTab = 'pattern';
+function switchTab(tab) {
+  activeTab = tab;
+  const isPattern = tab === 'pattern';
+  document.getElementById('tab-pattern').className = 'tool-btn' + (isPattern ? ' active' : '');
+  document.getElementById('tab-stage').className = 'tool-btn' + (!isPattern ? ' active' : '');
+  document.querySelector('.left-panel').style.display = isPattern ? '' : 'none';
+  document.querySelector('.right-panel').style.display = isPattern ? '' : 'none';
+  document.getElementById('tool-bar').style.display = isPattern ? '' : 'none';
+  document.getElementById('grid-wrap').style.display = isPattern ? '' : 'none';
+  document.getElementById('ctrl-bar').style.display = isPattern ? '' : 'none';
+  document.getElementById('stage-view').style.display = isPattern ? 'none' : '';
+  document.getElementById('stage-view-title').textContent = t('stage_comp');
+  renderStageEditor();
+}
+document.getElementById('tab-pattern').onclick = () => switchTab('pattern');
+document.getElementById('tab-stage').onclick = () => switchTab('stage');
+
+// ===== Init =====
+document.getElementById('btn-undo').onclick = doUndo;
+document.getElementById('btn-redo').onclick = doRedo;
+document.getElementById('btn-copy').onclick = doCopy;
+document.getElementById('btn-paste').onclick = doPaste;
+document.getElementById('btn-clear-selection').onclick = () => { selectionRect = null; selectedElement = null; renderGrid(); renderProps(); };
+document.getElementById('btn-export-pat').onclick = exportPatterns;
+document.getElementById('btn-export-stage').onclick = exportStages;
+function copyToClipboard(label) {
+  if (!navigator.clipboard) { alert(lang === 'jp' ? 'クリップボード機能なし' : 'No clipboard support'); return; }
+  let src;
+  if (label === 'pat') {
+    src = 'const PATTERNS = {};\nfunction addPattern(id, name, width, difficulty, data) {\n  PATTERNS[id] = Object.assign({ id, name, width, difficulty }, data);\n}\n\n';
+    for (const id of Object.keys(PATTERNS)) {
+      const p = PATTERNS[id];
+      const data = {};
+      if (p.gaps) data.gaps = p.gaps;
+      if (p.platforms) data.platforms = p.platforms;
+      if (p.pipes) data.pipes = p.pipes;
+      if (p.blocks) data.blocks = p.blocks;
+      if (p.hiddenBlocks) data.hiddenBlocks = p.hiddenBlocks;
+      if (p.ladders) data.ladders = p.ladders;
+      if (p.movingPlatforms) data.movingPlatforms = p.movingPlatforms;
+      if (p.verticalPlatforms) data.verticalPlatforms = p.verticalPlatforms;
+      if (p.breakablePlatforms) data.breakablePlatforms = p.breakablePlatforms;
+      if (p.movingLadders) data.movingLadders = p.movingLadders;
+      if (p.springs) data.springs = p.springs;
+      if (p.conveyors) data.conveyors = p.conveyors;
+      if (p.fireFloors) data.fireFloors = p.fireFloors;
+      if (p.enemies) data.enemies = p.enemies;
+      if (p.coins) data.coins = p.coins;
+      if (p.checkpoints) data.checkpoints = p.checkpoints;
+      src += `addPattern('${id}', '${p.name}', ${p.width}, ${p.difficulty}, ${JSON.stringify(data)});\n`;
+    }
+  } else {
+    src = 'const STAGE_BGS = [';
+    src += STAGE_BGS.map(b => JSON.stringify(b)).join(', ');
+    src += '];\n';
+    src += 'const MAIN_STAGE_CONFIGS = [\n';
+    for (const cfg of MAIN_STAGE_CONFIGS) {
+      src += `  { patterns: ${JSON.stringify(cfg.patterns)}, bg: STAGE_BGS[${STAGE_BGS.indexOf(cfg.bg)}], scroll: ${cfg.scroll} },\n`;
+    }
+    src += '];\n';
+    src += `function buildStage(patternIds, bg, scrollSpeed) {\n  const stage = { width: 0, bg, patternIds: [...patternIds], gaps: [], platforms: [], pipes: [], blocks: [], hiddenBlocks: [], ladders: [], movingPlatforms: [], verticalPlatforms: [], breakablePlatforms: [], movingLadders: [], springs: [], conveyors: [], fireFloors: [], enemies: [], coins: [], checkpoints: [] };\n  if (scrollSpeed) stage.scrollSpeed = scrollSpeed;\n  let offset = 0;\n  for (const pid of patternIds) {\n    const p = PATTERNS[pid];\n    stage.width += p.width;\n    for (const g of p.gaps) stage.gaps.push(g + offset);\n    for (const pl of (p.platforms || [])) stage.platforms.push({ x: pl.x + offset, y: pl.y, w: pl.w, h: pl.h });\n    for (const pi of (p.pipes || [])) stage.pipes.push({ x: pi.x + offset, y: pi.y, w: pi.w, h: pi.h });\n    for (const b of (p.blocks || [])) stage.blocks.push({ x: b.x + offset, y: b.y, type: b.type, content: b.content });\n    for (const hb of (p.hiddenBlocks || [])) stage.hiddenBlocks.push({ x: hb.x + offset, y: hb.y, content: hb.content });\n    for (const l of (p.ladders || [])) stage.ladders.push({ x: l.x + offset, y: l.y });\n    for (const mp of (p.movingPlatforms || [])) stage.movingPlatforms.push({ x: mp.x + offset, y: mp.y, w: mp.w, range: mp.range, speed: mp.speed });\n    for (const vp of (p.verticalPlatforms || [])) stage.verticalPlatforms.push({ x: vp.x + offset, y: vp.y, w: vp.w, range: vp.range, speed: vp.speed });\n    for (const bp of (p.breakablePlatforms || [])) stage.breakablePlatforms.push({ x: bp.x + offset, y: bp.y, w: bp.w, h: bp.h });\n    for (const ml of (p.movingLadders || [])) stage.movingLadders.push({ x: ml.x + offset, y: ml.y, range: ml.range, speed: ml.speed });\n    for (const s of (p.springs || [])) stage.springs.push({ x: s.x + offset, y: s.y, power: s.power });\n    for (const c of (p.conveyors || [])) stage.conveyors.push({ x: c.x + offset, y: c.y, w: c.w, speed: c.speed, dir: c.dir });\n    for (const f of (p.fireFloors || [])) stage.fireFloors.push({ x: f.x + offset, y: f.y, w: f.w });\n    for (const e of (p.enemies || [])) stage.enemies.push({ x: e.x + offset, feetRow: e.feetRow, speed: e.speed, dir: e.dir, type: e.type });\n    for (const c of (p.coins || [])) stage.coins.push({ x: c.x + offset, y: c.y });\n    for (const cp of (p.checkpoints || [])) stage.checkpoints.push({ x: cp.x + offset, feetRow: cp.feetRow });\n    offset += p.width;\n  }\n  stage.gaps = [...new Set(stage.gaps)].sort((a, b) => a - b);\n  stage.flagX = stage.width - 5;\n  stage.playerStart = { x: 3, feetRow: 10 };\n  return stage;\n}\n`;
+    src += 'const STAGES = MAIN_STAGE_CONFIGS.map(cfg => buildStage(cfg.patterns, cfg.bg, cfg.scroll));\n';
+    src += 'const EXTRA_PATTERN_POOL = Object.keys(PATTERNS).filter(id => id !== \'boss-1\' && id !== \'boss-2\');\n';
+    src += 'let extraSeed = Date.now() % 2147483647;\n';
+    src += 'function seededRand(seed) {\n  let s = seed % 2147483647;\n  if (s <= 0) s += 2147483646;\n  return function () {\n    s = (s * 16807) % 2147483647;\n    return s / 2147483647;\n  };\n}\n';
+    src += 'function buildRandomStage(seed) {\n  const rand = seededRand(seed);\n  const count = 6 + Math.floor(rand() * 5);\n  const pool = [...EXTRA_PATTERN_POOL];\n  const ids = [];\n  for (let i = 0; i < count && pool.length > 0; i++) {\n    const idx = Math.floor(rand() * pool.length);\n    ids.push(pool.splice(idx, 1)[0]);\n  }\n  const bg = STAGE_BGS[Math.floor(rand() * STAGE_BGS.length)];\n  const scroll = rand() < 0.5 ? 0 : 1.0;\n  return buildStage(ids, bg, scroll);\n}\n';
+    src += 'let extraStage = buildRandomStage(extraSeed);\n';
+  }
+  navigator.clipboard.writeText(src).then(() => alert(lang === 'jp' ? label + '.js をクリップボードにコピーしました' : label + '.js copied to clipboard')).catch(() => alert(lang === 'jp' ? 'コピー失敗' : 'Copy failed'));
+}
+document.getElementById('btn-copy-pat').onclick = () => copyToClipboard('patterns');
+document.getElementById('btn-copy-stage').onclick = () => copyToClipboard('stages');
+document.getElementById('btn-save-ls').onclick = saveToLS;
+document.getElementById('btn-load-ls').onclick = loadFromLS;
+document.getElementById('btn-new-pat').onclick = createNewPattern;
+document.getElementById('cat-filter').onchange = renderPatList;
+document.getElementById('stage-filter').onchange = renderPatList;
+
+
+renderLang();
+renderToolBar();
+renderPatList();
+renderHeader();
+renderGrid();
+renderProps();
+renderStageEditor();
+validate();
+updateUndoRedoButtons();
+</script>
+</body>
+</html>
