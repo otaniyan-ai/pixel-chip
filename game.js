@@ -210,6 +210,7 @@ const touchButtons = [
   { id: 'btn-jump', key: 'Space' },
   { id: 'btn-fire', key: 'KeyX' },
   { id: 'btn-pause', key: 'KeyP' },
+  { id: 'btn-quit', key: 'KeyQ' },
 ];
 function initTouchControls() {
   for (const b of touchButtons) {
@@ -220,33 +221,43 @@ function initTouchControls() {
       if (b.id === 'btn-pause') {
         if (state === STATE_PLAYING) pauseGame();
         else if (state === STATE_PAUSED) resumeGame();
+      } else if (b.id === 'btn-quit') {
+        if (state === STATE_PAUSED) quitToTitle();
       } else {
         keys[b.key] = true;
       }
     });
-    el.addEventListener('touchend', () => { if (b.id !== 'btn-pause') keys[b.key] = false; });
-    el.addEventListener('touchcancel', () => { if (b.id !== 'btn-pause') keys[b.key] = false; });
+    el.addEventListener('touchend', () => { if (b.id !== 'btn-pause' && b.id !== 'btn-quit') keys[b.key] = false; });
+    el.addEventListener('touchcancel', () => { if (b.id !== 'btn-pause' && b.id !== 'btn-quit') keys[b.key] = false; });
     el.addEventListener('mousedown', (e) => {
       e.preventDefault();
       if (b.id === 'btn-pause') {
         if (state === STATE_PLAYING) pauseGame();
         else if (state === STATE_PAUSED) resumeGame();
+      } else if (b.id === 'btn-quit') {
+        if (state === STATE_PAUSED) quitToTitle();
       } else {
         keys[b.key] = true;
       }
     });
-    el.addEventListener('mouseup', () => { if (b.id !== 'btn-pause') keys[b.key] = false; });
-    el.addEventListener('mouseleave', () => { if (b.id !== 'btn-pause') keys[b.key] = false; });
-    el.addEventListener('blur', () => { if (b.id !== 'btn-pause') keys[b.key] = false; });
+    el.addEventListener('mouseup', () => { if (b.id !== 'btn-pause' && b.id !== 'btn-quit') keys[b.key] = false; });
+    el.addEventListener('mouseleave', () => { if (b.id !== 'btn-pause' && b.id !== 'btn-quit') keys[b.key] = false; });
+    el.addEventListener('blur', () => { if (b.id !== 'btn-pause' && b.id !== 'btn-quit') keys[b.key] = false; });
   }
 }
 initTouchControls();
 
 function updateTouchControls() {
-  const active = state === STATE_PLAYING;
   for (const b of touchButtons) {
     const el = document.getElementById(b.id);
-    if (el) el.style.pointerEvents = active ? 'auto' : 'none';
+    if (!el) continue;
+    if (b.id === 'btn-pause') {
+      el.style.pointerEvents = (state === STATE_PLAYING || state === STATE_PAUSED) ? 'auto' : 'none';
+    } else if (b.id === 'btn-quit') {
+      el.style.pointerEvents = (state === STATE_PAUSED) ? 'auto' : 'none';
+    } else {
+      el.style.pointerEvents = (state === STATE_PLAYING) ? 'auto' : 'none';
+    }
   }
 }
 
