@@ -38,17 +38,20 @@ function updateEnemies() {
       }
     }
     if (e.type === 'shooter') {
-      e.shootTimer++;
-      if (e.shootTimer >= 90) {
-        e.shootTimer = 0;
-        enemyProjectiles.push({
-          x: e.x + e.w / 2 + e.dir * 12,
-          y: e.y + 8,
-          w: 8, h: 8,
-          vx: e.dir * 3,
-          dead: false,
-        });
-        playSfx('fireball');
+      const sx = e.x - cameraX;
+      if (sx >= -40 && sx <= SCREEN_W + 40) {
+        e.shootTimer++;
+        if (e.shootTimer >= 90) {
+          e.shootTimer = 0;
+          enemyProjectiles.push({
+            x: e.x + e.w / 2 + e.dir * 12,
+            y: e.y + 8,
+            w: 8, h: 8,
+            vx: e.dir * 3,
+            dead: false,
+          });
+          playSfx('fireball');
+        }
       }
     }
     e.x += e.dir * e.speed;
