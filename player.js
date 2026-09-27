@@ -113,7 +113,7 @@ function updatePlayer() {
   const ml = onMovingLadder();
   if (ladder || ml) {
     player.vy = 0;
-    if (keys['ArrowUp'] || keys['KeyW']) player.vy = -MOVE;
+    if (keys['ArrowUp'] || keys['KeyW'] || keys['Space']) player.vy = -MOVE;
     else if (keys['ArrowDown'] || keys['KeyS']) player.vy = MOVE;
     player.onGround = false;
     if (ml) player.y += ml.dy;
